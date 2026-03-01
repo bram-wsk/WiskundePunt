@@ -8,6 +8,7 @@ import { TeacherDashboard } from './components/TeacherDashboard';
 import { Onboarding } from './components/Onboarding';
 import { ModuleHub } from './components/ModuleHub';
 import { InterventionModal } from './components/InterventionModal';
+import { SetPasswordModal } from './components/SetPasswordModal';
 import { evaluateProgression } from './services/geminiService';
 import { supabase } from './services/supabaseClient';
 import { DEFAULT_AI_GUIDE_CONFIG } from './constants';
@@ -138,6 +139,7 @@ const App: React.FC = () => {
   const [progressionInfo, setProgressionInfo] = useState<AIProgression | null>(null);
   const [isEvaluatingGrowth, setIsEvaluatingGrowth] = useState(false);
   const [showGrowthCelebration, setShowGrowthCelebration] = useState(false);
+  const [showPasswordSetup, setShowPasswordSetup] = useState(false);
 
   const [sessionErrorCounts, setSessionErrorCounts] = useState<Record<ErrorType, number>>({
     [ErrorType.ORDER]: 0, [ErrorType.CALCULATION]: 0, [ErrorType.SIGN]: 0, 
@@ -160,6 +162,43 @@ const App: React.FC = () => {
     if (!sections) return "";
     return Object.values(sections).join('\n\n');
   }, [aiGuideConfig]);
+
+  // AUTH LISTENER FOR INVITES & PASSWORD SETUP
+  useEffect(() => {
+    const handleAuthUser = async (user: any) => {
+        // Check for password setup param
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('setup_password') === 'true') {
+            setShowPasswordSetup(true);
+        }
+
+        // Fetch teacher profile if not already set
+        // Note: We check if userInfo is null inside the effect or rely on re-render
+        // But here we are inside a callback, so we fetch directly
+        const { data: teacher } = await supabase.from('teachers').select('*').eq('auth_id', user.id).maybeSingle();
+        
+        if (teacher) {
+            setUserInfo({
+                firstName: teacher.name,
+                className: teacher.role === 'admin' ? 'Systeem' : 'Leerkrachten',
+                role: teacher.role,
+                assignedClassIds: teacher.class_ids
+            });
+        }
+    };
+
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) handleAuthUser(session.user);
+    });
+
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) handleAuthUser(session.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // FETCH INITIAL DATA FROM SUPABASE
   useEffect(() => {
@@ -763,6 +802,17 @@ const App: React.FC = () => {
               <button onClick={() => setShowGrowthCelebration(false)} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl uppercase tracking-widest text-xs border-none cursor-pointer">Verder gaan</button>
            </div>
         </div>
+      )}
+
+      {showPasswordSetup && (
+        <SetPasswordModal 
+          onComplete={() => {
+            setShowPasswordSetup(false);
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+            alert("Wachtwoord succesvol ingesteld! Je kan nu inloggen.");
+          }} 
+        />
       )}
 
       {isSimulating && (

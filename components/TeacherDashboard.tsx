@@ -845,7 +845,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           email: newTeacherEmail.trim(),
           name: newTeacherName.trim(),
           role: newTeacherRole,
-          redirectTo: window.location.origin
+          redirectTo: `${window.location.origin}?setup_password=true`
         })
       });
 
