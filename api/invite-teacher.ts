@@ -28,7 +28,7 @@ export default async function handler(req: Request, res: Response) {
             return res.status(400).json({ error: "Invalid JSON body" });
         }
     }
-    const { email, name, role } = body || {};
+    const { email, name, role, redirectTo } = body || {};
 
     if (!email || !name) {
       return res.status(400).json({ error: "Email and name are required" });
@@ -54,7 +54,10 @@ export default async function handler(req: Request, res: Response) {
     let userId = null;
 
     // Try to invite first
-    const { data: newUser, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
+    const { data: newUser, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+        redirectTo: redirectTo || undefined,
+        data: { name, role }
+    });
 
     if (inviteError) {
       // If user already exists, try to fetch their ID
@@ -65,12 +68,12 @@ export default async function handler(req: Request, res: Response) {
           // List users to find the ID
           const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
           
-          if (listError) {
+          if (listError || !usersData) {
               console.error("List users error:", listError);
-              return res.status(400).json({ error: "User exists, but failed to retrieve ID: " + listError.message });
+              return res.status(400).json({ error: "User exists, but failed to retrieve ID: " + (listError?.message || "Unknown error") });
           }
 
-          const existingUser = usersData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+          const existingUser = usersData.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
           
           if (existingUser) {
               userId = existingUser.id;

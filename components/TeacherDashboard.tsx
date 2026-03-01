@@ -844,7 +844,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         body: JSON.stringify({
           email: newTeacherEmail.trim(),
           name: newTeacherName.trim(),
-          role: newTeacherRole
+          role: newTeacherRole,
+          redirectTo: window.location.origin
         })
       });
 
