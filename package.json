@@ -18,7 +18,8 @@
     "mathlive": "0.98.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "recharts": "^3.7.0"
+    "recharts": "^3.7.0",
+    "resend": "^6.9.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
