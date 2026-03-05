@@ -168,7 +168,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, 
   const getGreetingMessage = () => {
     if (error) return error;
     if (step === 'teacher-login') {
-      return "Welkom collega. Log in met je e-mailadres en wachtwoord.";
+      return "Halt! Dit gedeelte is enkel voor leerkrachten.";
     }
     if (step === 'register') {
         return `Welkom ${regName}! Stel je wachtwoord in om je account te activeren.`;

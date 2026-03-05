@@ -367,6 +367,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [newTeacherRole, setNewTeacherRole] = useState<'admin' | 'teacher'>('teacher');
   const [isAddingTeacher, setIsAddingTeacher] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string>('');
   const [manualAuthId, setManualAuthId] = useState('');
 
@@ -850,6 +851,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       });
 
       const data = await response.json();
+      
+      if (data?.inviteLink) {
+          setLastInviteLink(data.inviteLink);
+      }
 
       if (!response.ok) {
           // If server fails, switch to manual mode
@@ -2366,6 +2371,39 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                 {isAddingTeacher ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-paper-plane"></i>}
                                 Verstuur Uitnodiging
                              </button>
+
+                             {lastInviteLink && (
+                                <div className="mt-4 p-4 bg-emerald-50 border-2 border-emerald-100 rounded-2xl animate-in slide-in-from-top-2 duration-300">
+                                   <div className="flex items-center gap-2 mb-2 text-emerald-800">
+                                      <i className="fa-solid fa-circle-check"></i>
+                                      <span className="text-xs font-black uppercase tracking-widest">Uitnodiging Klaar!</span>
+                                   </div>
+                                   <p className="text-[10px] text-emerald-600 font-medium mb-3">
+                                      De mail is verstuurd. Als deze niet aankomt, kun je deze link direct delen:
+                                   </p>
+                                   <div className="flex gap-2">
+                                      <div className="flex-1 bg-white border border-emerald-200 rounded-xl px-3 py-2 text-[10px] font-mono text-emerald-700 truncate select-all">
+                                         {lastInviteLink}
+                                      </div>
+                                      <button 
+                                         onClick={() => {
+                                            navigator.clipboard.writeText(lastInviteLink);
+                                            alert("Link gekopieerd!");
+                                         }}
+                                         className="bg-emerald-600 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md hover:bg-emerald-700 transition-colors border-none cursor-pointer"
+                                         title="Kopieer link"
+                                      >
+                                         <i className="fa-solid fa-copy"></i>
+                                      </button>
+                                   </div>
+                                   <button 
+                                      onClick={() => setLastInviteLink(null)}
+                                      className="w-full mt-3 text-[9px] font-black text-emerald-400 uppercase tracking-widest hover:text-emerald-600 transition-colors border-none bg-transparent cursor-pointer"
+                                   >
+                                      Verberg Link
+                                   </button>
+                                </div>
+                             )}
                           </div>
                       )}
                    </div>

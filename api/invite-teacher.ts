@@ -50,44 +50,44 @@ export default async function handler(req: Request, res: Response) {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 2. Invite User via Email OR Get Existing User
+    // 2. Generate Invite Link & Send Email
     let userId = null;
+    let inviteLink = null;
 
-    // Try to invite first
-    const { data: newUser, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-        redirectTo: redirectTo || undefined,
-        data: { name, role }
+    // We use generateLink to get the link AND trigger the email (Supabase does both if configured, 
+    // but generateLink gives us the URL back immediately for the UI)
+    const { data: linkData, error: inviteError } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'invite',
+        email: email,
+        options: {
+            redirectTo: redirectTo || undefined,
+            data: { name, role }
+        }
     });
 
     if (inviteError) {
       // If user already exists, try to fetch their ID
-      // The error message for existing user is usually "A user with this email address has already been registered"
-      if (inviteError.message.includes("already been registered")) {
+      if (inviteError.message.includes("already been registered") || inviteError.message.includes("already exists")) {
           console.log("User already registered, fetching ID...");
-          
-          // List users to find the ID
           const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
           
           if (listError || !usersData) {
-              console.error("List users error:", listError);
-              return res.status(400).json({ error: "User exists, but failed to retrieve ID: " + (listError?.message || "Unknown error") });
+              return res.status(400).json({ error: "User exists, but failed to retrieve ID." });
           }
 
           const existingUser = usersData.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
-          
           if (existingUser) {
               userId = existingUser.id;
-              console.log("Found existing user ID:", userId);
           } else {
-               return res.status(400).json({ error: "User exists according to Auth, but could not be found in user list." });
+               return res.status(400).json({ error: "User exists according to Auth, but could not be found." });
           }
-
       } else {
           console.error("Invite error:", inviteError);
           return res.status(400).json({ error: inviteError.message });
       }
-    } else if (newUser?.user) {
-        userId = newUser.user.id;
+    } else if (linkData?.user) {
+        userId = linkData.user.id;
+        inviteLink = linkData.properties?.action_link;
     }
 
     if (!userId) {
@@ -133,7 +133,8 @@ export default async function handler(req: Request, res: Response) {
     }
 
     return res.status(200).json({ 
-        message: "Uitnodiging verstuurd / Profiel gekoppeld!", 
+        message: inviteLink ? "Uitnodiging verstuurd!" : "Gebruiker bestond al. Profiel is bijgewerkt/gekoppeld.", 
+        inviteLink: inviteLink,
         teacher: { 
             id: userId, 
             name, 
