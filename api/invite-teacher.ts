@@ -46,8 +46,20 @@ export default async function handler(req: Request, res: Response) {
           const { data: usersData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
           if (listError || !usersData) return res.status(400).json({ error: "User exists, but failed to retrieve ID." });
           const existingUser = usersData.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase());
-          if (existingUser) userId = existingUser.id;
-          else return res.status(400).json({ error: "User exists according to Auth, but could not be found." });
+          if (existingUser) {
+              userId = existingUser.id;
+              // Try to generate a magic link for existing user so they can still "activate" or log in
+              const { data: recoveryData } = await supabaseAdmin.auth.admin.generateLink({
+                  type: 'magiclink',
+                  email: email,
+                  options: { redirectTo: redirectTo || undefined }
+              });
+              if (recoveryData?.properties?.action_link) {
+                  inviteLink = recoveryData.properties.action_link;
+              }
+          } else {
+              return res.status(400).json({ error: "User exists according to Auth, but could not be found." });
+          }
       } else {
           return res.status(400).json({ error: inviteError.message });
       }

@@ -871,7 +871,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
            }]);
            setNewTeacherName(''); setNewTeacherEmail(''); setNewTeacherPassword(''); setNewTeacherRole('teacher');
            setServerError('');
-           alert("Uitnodiging succesvol verstuurd!");
+           
+           if (!data.inviteLink) {
+               setServerError("Deze leerkracht bestaat al. Er is geen nieuwe activatielink nodig.");
+           }
       }
 
     } catch (err: any) {
