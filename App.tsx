@@ -139,7 +139,11 @@ const App: React.FC = () => {
   const [progressionInfo, setProgressionInfo] = useState<AIProgression | null>(null);
   const [isEvaluatingGrowth, setIsEvaluatingGrowth] = useState(false);
   const [showGrowthCelebration, setShowGrowthCelebration] = useState(false);
-  const [showPasswordSetup, setShowPasswordSetup] = useState(false);
+  const [showPasswordSetup, setShowPasswordSetup] = useState(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
+    return searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true';
+  });
 
   const [sessionErrorCounts, setSessionErrorCounts] = useState<Record<ErrorType, number>>({
     [ErrorType.ORDER]: 0, [ErrorType.CALCULATION]: 0, [ErrorType.SIGN]: 0, 
@@ -166,24 +170,29 @@ const App: React.FC = () => {
   // AUTH LISTENER FOR INVITES & PASSWORD SETUP
   useEffect(() => {
     const handleAuthUser = async (user: any) => {
-        // Check for password setup param
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('setup_password') === 'true') {
+        // Check for password setup param in both search and hash
+        const searchParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
+        
+        if (searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true') {
             setShowPasswordSetup(true);
         }
 
-        // Fetch teacher profile if not already set
-        // Note: We check if userInfo is null inside the effect or rely on re-render
-        // But here we are inside a callback, so we fetch directly
-        const { data: teacher } = await supabase.from('teachers').select('*').eq('auth_id', user.id).maybeSingle();
-        
-        if (teacher) {
-            setUserInfo({
-                firstName: teacher.name,
-                className: teacher.role === 'admin' ? 'Systeem' : 'Leerkrachten',
-                role: teacher.role,
-                assignedClassIds: teacher.class_ids
-            });
+        setIsLoading(true);
+        try {
+            // Fetch teacher profile if not already set
+            const { data: teacher } = await supabase.from('teachers').select('*').eq('auth_id', user.id).maybeSingle();
+            
+            if (teacher) {
+                setUserInfo({
+                    firstName: teacher.name,
+                    className: teacher.role === 'admin' ? 'Systeem' : 'Leerkrachten',
+                    role: teacher.role,
+                    assignedClassIds: teacher.class_ids
+                });
+            }
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -742,6 +751,21 @@ const App: React.FC = () => {
     return <div className="min-h-screen flex items-center justify-center text-blue-600 font-bold">Laden...</div>;
   }
 
+  // Dedicated Password Setup Page
+  if (showPasswordSetup) {
+    return (
+      <SetPasswordModal 
+        onComplete={() => {
+          setShowPasswordSetup(false);
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
+          // Refresh or redirect to ensure dashboard loads correctly
+          window.location.reload();
+        }} 
+      />
+    );
+  }
+
   // If user is not logged in, show Onboarding
   if (!userInfo) {
     return <Onboarding onComplete={setUserInfo} classrooms={classrooms} teachers={teachers} students={students} />;
@@ -802,17 +826,6 @@ const App: React.FC = () => {
               <button onClick={() => setShowGrowthCelebration(false)} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl uppercase tracking-widest text-xs border-none cursor-pointer">Verder gaan</button>
            </div>
         </div>
-      )}
-
-      {showPasswordSetup && (
-        <SetPasswordModal 
-          onComplete={() => {
-            setShowPasswordSetup(false);
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
-            alert("Wachtwoord succesvol ingesteld! Je kan nu inloggen.");
-          }} 
-        />
       )}
 
       {isSimulating && (

@@ -14,7 +14,14 @@ interface OnboardingProps {
 type OnboardingStep = 'choice' | 'student-login' | 'teacher-login' | 'register';
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, teachers, students }) => {
-  const [step, setStep] = useState<OnboardingStep>('choice');
+  const [step, setStep] = useState<OnboardingStep>(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
+    if (searchParams.get('register') === 'true' || hashParams.get('register') === 'true') {
+        return 'register';
+    }
+    return 'choice';
+  });
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState(''); // Used for both student (if needed) and teacher
   const [email, setEmail] = useState(''); // For teacher login
@@ -22,15 +29,28 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, 
   const [loading, setLoading] = useState(false);
 
   // Registration state
-  const [regName, setRegName] = useState('');
-  const [regRole, setRegRole] = useState<'admin' | 'teacher'>('teacher');
+  const [regName, setRegName] = useState(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
+    return searchParams.get('name') || hashParams.get('name') || '';
+  });
+  const [regRole, setRegRole] = useState<'admin' | 'teacher'>(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
+    return (searchParams.get('role') || hashParams.get('role') || 'teacher') as 'admin' | 'teacher';
+  });
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('register') === 'true') {
+    // We still keep this to handle dynamic changes if needed, 
+    // but the initial state is now set above.
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
+    
+    const isRegister = searchParams.get('register') === 'true' || hashParams.get('register') === 'true';
+    if (isRegister) {
         setStep('register');
-        setRegName(params.get('name') || '');
-        setRegRole((params.get('role') as 'admin' | 'teacher') || 'teacher');
+        setRegName(searchParams.get('name') || hashParams.get('name') || '');
+        setRegRole((searchParams.get('role') || hashParams.get('role') || 'teacher') as 'admin' | 'teacher');
     }
   }, []);
 
@@ -241,28 +261,39 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, 
           )}
 
           {step === 'register' && (
-             <form onSubmit={handleTeacherRegistration} className="space-y-5 text-left">
-                <div className="bg-emerald-50 p-4 rounded-xl text-emerald-800 text-xs border border-emerald-100 mb-4">
-                    <p className="font-bold"><i className="fa-solid fa-user-plus mr-1"></i> Account Activeren</p>
-                    <p className="mt-1">Je bent uitgenodigd als <strong>{regRole === 'admin' ? 'Beheerder' : 'Leerkracht'}</strong>.</p>
+             <form onSubmit={handleTeacherRegistration} className="space-y-6 text-left">
+                <div className="bg-emerald-50 p-6 rounded-[2rem] text-emerald-800 border-2 border-emerald-100 mb-6 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-emerald-600 shadow-sm">
+                        <i className="fa-solid fa-user-plus text-lg"></i>
+                    </div>
+                    <div>
+                        <p className="font-black uppercase tracking-widest text-[10px]">Account Activeren</p>
+                        <p className="text-xs font-medium opacity-80 mt-0.5">Je bent uitgenodigd als <strong>{regRole === 'admin' ? 'Beheerder' : 'Leerkracht'}</strong>.</p>
+                    </div>
                 </div>
-                <div>
-                   <label className="text-[10px] font-black text-emerald-500 uppercase tracking-widest ml-1">Naam</label>
-                   <input type="text" value={regName} onChange={(e) => setRegName(e.target.value)} required className="w-full px-6 py-4 bg-emerald-50/20 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 transition-all outline-none font-bold" />
+                
+                <div className="space-y-4">
+                    <div>
+                       <label className="text-[10px] font-black text-emerald-500 uppercase tracking-widest ml-1">Volledige Naam</label>
+                       <input type="text" value={regName} onChange={(e) => setRegName(e.target.value)} required className="w-full px-6 py-4 bg-emerald-50/20 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 transition-all outline-none font-bold" />
+                    </div>
+                    <div>
+                       <label className="text-[10px] font-black text-emerald-500 uppercase tracking-widest ml-1">E-mailadres</label>
+                       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="naam@school.be" required className="w-full px-6 py-4 bg-emerald-50/20 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 transition-all outline-none font-bold" />
+                    </div>
+                    <div>
+                       <label className="text-[10px] font-black text-emerald-500 uppercase tracking-widest ml-1">Kies een sterk wachtwoord</label>
+                       <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Minimaal 6 tekens" required className="w-full px-6 py-4 bg-emerald-50/20 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 transition-all outline-none font-black" />
+                       <p className="text-[9px] text-slate-400 font-bold ml-2 mt-1">Dit wachtwoord gebruik je om later in te loggen.</p>
+                    </div>
                 </div>
-                <div>
-                   <label className="text-[10px] font-black text-emerald-500 uppercase tracking-widest ml-1">E-mailadres</label>
-                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="naam@school.be" required className="w-full px-6 py-4 bg-emerald-50/20 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 transition-all outline-none font-bold" />
-                </div>
-                <div>
-                   <label className="text-[10px] font-black text-emerald-500 uppercase tracking-widest ml-1">Kies Wachtwoord</label>
-                   <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 tekens" required className="w-full px-6 py-4 bg-emerald-50/20 border-2 border-emerald-100 rounded-2xl focus:border-emerald-500 transition-all outline-none font-black" />
-                </div>
-                <div className="flex gap-3">
-                   <button type="button" onClick={() => { setStep('choice'); window.history.replaceState({}, document.title, window.location.pathname); }} className="flex-1 bg-slate-100 text-slate-500 font-black py-4 rounded-xl text-[10px] uppercase tracking-widest border-none cursor-pointer" disabled={loading}>Annuleren</button>
-                   <button type="submit" className="flex-[2] bg-emerald-600 text-white font-black py-4 rounded-xl shadow-lg text-[10px] uppercase tracking-widest border-none cursor-pointer disabled:opacity-50" disabled={loading}>
-                     {loading ? 'Activeren...' : 'Account Aanmaken'}
+
+                <div className="flex flex-col gap-3 pt-2">
+                   <button type="submit" className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-emerald-100 uppercase tracking-widest text-xs border-none cursor-pointer disabled:opacity-50 hover:bg-emerald-700 transition-all" disabled={loading}>
+                     {loading ? <i className="fa-solid fa-spinner fa-spin mr-2"></i> : null}
+                     {loading ? 'Account aanmaken...' : 'Account Activeren & Starten'}
                    </button>
+                   <button type="button" onClick={() => { setStep('choice'); window.history.replaceState({}, document.title, window.location.pathname); }} className="w-full bg-slate-100 text-slate-500 font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest border-none cursor-pointer hover:bg-slate-200 transition-all" disabled={loading}>Annuleren</button>
                 </div>
              </form>
           )}

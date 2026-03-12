@@ -368,7 +368,6 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [isAddingTeacher, setIsAddingTeacher] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
-  const [lastInviteEmailSent, setLastInviteEmailSent] = useState(false);
   const [serverError, setServerError] = useState<string>('');
   const [manualAuthId, setManualAuthId] = useState('');
 
@@ -855,7 +854,6 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       
       if (data?.inviteLink) {
           setLastInviteLink(data.inviteLink);
-          setLastInviteEmailSent(!!data.emailSent);
       }
 
       if (!response.ok) {
@@ -2305,7 +2303,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                   <p>De server-functie reageert niet. Geen probleem! Stuur deze link naar je collega:</p>
                                   
                                   <div className="mt-2 bg-white p-2 rounded border border-amber-200 font-mono text-[10px] break-all select-all cursor-text">
-                                      {window.location.origin}?register=true&name={encodeURIComponent(newTeacherName)}&role={newTeacherRole}
+                                      {window.location.origin}/?register=true&name={encodeURIComponent(newTeacherName)}&role={newTeacherRole}
                                   </div>
                                   
                                   <p className="mt-2 text-[10px]">
@@ -2322,7 +2320,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                   </button>
                                   <button 
                                     onClick={() => {
-                                        const url = `${window.location.origin}?register=true&name=${encodeURIComponent(newTeacherName)}&role=${newTeacherRole}`;
+                                        const url = `${window.location.origin}/?register=true&name=${encodeURIComponent(newTeacherName)}&role=${newTeacherRole}`;
                                         navigator.clipboard.writeText(url);
                                         alert("Link gekopieerd!");
                                     }} 
@@ -2370,22 +2368,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                 disabled={!newTeacherName.trim() || !newTeacherEmail.trim() || isAddingTeacher} 
                                 className="w-full px-4 py-3 bg-emerald-500 text-white rounded-xl font-black shadow-lg hover:bg-emerald-600 transition-colors border-none cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                              >
-                                {isAddingTeacher ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-paper-plane"></i>}
-                                Verstuur Uitnodiging
+                                {isAddingTeacher ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-link"></i>}
+                                Genereer Activatielink
                              </button>
 
                              {lastInviteLink && (
                                 <div className="mt-4 p-4 bg-emerald-50 border-2 border-emerald-100 rounded-2xl animate-in slide-in-from-top-2 duration-300">
                                    <div className="flex items-center gap-2 mb-2 text-emerald-800">
-                                      <i className={`fa-solid ${lastInviteEmailSent ? 'fa-circle-check' : 'fa-circle-exclamation text-amber-500'}`}></i>
+                                      <i className="fa-solid fa-circle-check"></i>
                                       <span className="text-xs font-black uppercase tracking-widest">
-                                         {lastInviteEmailSent ? 'Uitnodiging Verzonden!' : 'E-mail niet verzonden'}
+                                         Link Gegenereerd!
                                       </span>
                                    </div>
                                    <p className="text-[10px] text-emerald-600 font-medium mb-3">
-                                      {lastInviteEmailSent 
-                                         ? 'De mail is verstuurd. Als deze niet aankomt, kun je deze link direct delen:' 
-                                         : 'De automatische mail kon niet worden verzonden. Deel deze link handmatig met je collega:'}
+                                      De activatielink is klaar. Kopieer deze en stuur hem naar je collega:
                                    </p>
                                    <div className="flex gap-2">
                                       <div className="flex-1 bg-white border border-emerald-200 rounded-xl px-3 py-2 text-[10px] font-mono text-emerald-700 truncate select-all">
