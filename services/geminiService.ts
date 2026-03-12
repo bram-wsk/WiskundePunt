@@ -16,7 +16,7 @@ export async function analyzeMathStep(
   aiGuideContext: string, // New parameter for AI Guide instructions
   attemptCount: number = 0 // New parameter to track repeated errors for Step 0/1 logic
 ): Promise<AIAnalysis> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
   if (!apiKey) throw new Error("Gemini API Key is missing.");
   const ai = new GoogleGenAI({ apiKey });
   try {
@@ -92,7 +92,7 @@ export async function analyzeMathStep(
 }
 
 export async function evaluateProgression(stats: SessionStats, currentLevel: DifficultyLevel, moduleId: string, aiGuideContext: string): Promise<AIProgression> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
   if (!apiKey) return { shouldLevelUp: false, newLevel: currentLevel, reasoning: "API Key missing", growthMessage: "Oeps", feedUp: "", feedback: "", feedForward: "", tip: "", encouragement: "" };
   const ai = new GoogleGenAI({ apiKey });
   try {
@@ -140,7 +140,7 @@ export async function analyzeClassPerformance(
   results: StudentResult[],
   aiGuideContext: string
 ): Promise<ClassAnalysis> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
   if (!apiKey) throw new Error("Gemini API Key is missing.");
   const ai = new GoogleGenAI({ apiKey });
   try {
@@ -205,7 +205,7 @@ export async function generateMathProblem(
   level: DifficultyLevel,
   aiGuideContext: string
 ): Promise<{ expression: string; steps: { content: string; operation?: string }[] }> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
   if (!apiKey) {
     console.error("Gemini API Key is missing!");
     throw new Error("Gemini API Key is missing. Controleer de instellingen.");
