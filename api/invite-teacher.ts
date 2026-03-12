@@ -49,13 +49,18 @@ export default async function handler(req: Request, res: Response) {
           if (existingUser) {
               userId = existingUser.id;
               // Try to generate a magic link for existing user so they can still "activate" or log in
-              const { data: recoveryData } = await supabaseAdmin.auth.admin.generateLink({
+              console.log("Generating magic link for existing user:", email);
+              const { data: recoveryData, error: recoveryError } = await supabaseAdmin.auth.admin.generateLink({
                   type: 'magiclink',
                   email: email,
                   options: { redirectTo: redirectTo || undefined }
               });
+              if (recoveryError) {
+                  console.error("Recovery link generation error:", recoveryError);
+              }
               if (recoveryData?.properties?.action_link) {
                   inviteLink = recoveryData.properties.action_link;
+                  console.log("Magic link generated:", inviteLink);
               }
           } else {
               return res.status(400).json({ error: "User exists according to Auth, but could not be found." });

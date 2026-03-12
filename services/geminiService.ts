@@ -16,7 +16,9 @@ export async function analyzeMathStep(
   aiGuideContext: string, // New parameter for AI Guide instructions
   attemptCount: number = 0 // New parameter to track repeated errors for Step 0/1 logic
 ): Promise<AIAnalysis> {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  if (!apiKey) throw new Error("Gemini API Key is missing.");
+  const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview", 
@@ -90,7 +92,9 @@ export async function analyzeMathStep(
 }
 
 export async function evaluateProgression(stats: SessionStats, currentLevel: DifficultyLevel, moduleId: string, aiGuideContext: string): Promise<AIProgression> {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  if (!apiKey) return { shouldLevelUp: false, newLevel: currentLevel, reasoning: "API Key missing", growthMessage: "Oeps", feedUp: "", feedback: "", feedForward: "", tip: "", encouragement: "" };
+  const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -136,7 +140,9 @@ export async function analyzeClassPerformance(
   results: StudentResult[],
   aiGuideContext: string
 ): Promise<ClassAnalysis> {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  if (!apiKey) throw new Error("Gemini API Key is missing.");
+  const ai = new GoogleGenAI({ apiKey });
   try {
     const contents = `ANALYSEER DEZE VOLLEDIGE KLASRESULTATEN VOOR ${className}:
     ${JSON.stringify(results, null, 2)}
@@ -199,7 +205,12 @@ export async function generateMathProblem(
   level: DifficultyLevel,
   aiGuideContext: string
 ): Promise<{ expression: string; steps: { content: string; operation?: string }[] }> {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+  if (!apiKey) {
+    console.error("Gemini API Key is missing!");
+    throw new Error("Gemini API Key is missing. Controleer de instellingen.");
+  }
+  const ai = new GoogleGenAI({ apiKey });
   const isEquation = moduleId.startsWith('vergelijkingen');
 
   try {
@@ -253,6 +264,7 @@ export async function generateMathProblem(
     });
 
     const text = response.text.trim();
+    console.log("Gemini response text (generateMathProblem):", text);
     return JSON.parse(text);
   } catch (error) {
     console.error("AI Generation Error:", error);

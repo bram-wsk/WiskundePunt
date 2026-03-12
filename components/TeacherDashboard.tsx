@@ -543,19 +543,24 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   }, [viewStudentName, filteredDisplayStudents]);
 
   const aiGuideContextForClassAnalysis = useMemo(() => {
-    const sections = aiGuideConfig.sections;
+    const sections = aiGuideConfig?.sections;
+    if (!sections) return "";
     return `
-      ${sections.systemPersona}
-      ${sections.didacticApproach}
-      ${sections.terminologyRules}
-      ${sections.errorIdentification}
-      ${sections.doubtHandling}
-      ${sections.differentiation}
+      ${sections.systemPersona || ""}
+      ${sections.didacticApproach || ""}
+      ${sections.terminologyRules || ""}
+      ${sections.errorIdentification || ""}
+      ${sections.doubtHandling || ""}
+      ${sections.differentiation || ""}
     `;
   }, [aiGuideConfig]);
 
   const handleGenerateClassReport = async () => {
     if (viewClassId === 'all') return;
+    if (!aiGuideConfig || !aiGuideConfig.sections) {
+      alert("AI-gids configuratie is niet geladen.");
+      return;
+    }
     setIsGeneratingReport(true);
     const clsName = classrooms.find(c => c.id === viewClassId)?.name || "";
     const clsResults = myStudents.filter(s => s.className === clsName);
@@ -701,12 +706,17 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   };
 
   const handleGenerateProblem = async () => {
+    console.log("handleGenerateProblem called");
     setIsGenerating(true);
     try {
+      if (!aiGuideConfig || !aiGuideConfig.sections) {
+        throw new Error("AI-gids configuratie is niet geladen.");
+      }
+      
       // Construct minimal context from config
       const context = `
-        ${aiGuideConfig.sections.terminologyRules}
-        ${aiGuideConfig.sections.didacticApproach}
+        ${aiGuideConfig.sections.terminologyRules || ""}
+        ${aiGuideConfig.sections.didacticApproach || ""}
       `;
       
       const generated = await generateMathProblem(selectedModule, level, context);
@@ -742,8 +752,9 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
          }));
          setSteps(newSteps);
       }
-    } catch (error) {
-       alert("Er ging iets mis bij het genereren. Probeer het opnieuw.");
+    } catch (error: any) {
+       console.error("Error in handleGenerateProblem:", error);
+       alert(`Er ging iets mis bij het genereren: ${error.message || "Onbekende fout"}. Probeer het opnieuw.`);
     } finally {
        setIsGenerating(false);
     }
