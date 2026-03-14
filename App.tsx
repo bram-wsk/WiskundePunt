@@ -117,6 +117,7 @@ const createInitialProgress = (): Record<string, ModuleProgress> => {
   return initialProgress;
 };
 
+// Main Application Component - Triggering Redeploy for API Key fix
 const App: React.FC = () => {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
