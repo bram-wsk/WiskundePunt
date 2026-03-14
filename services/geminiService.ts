@@ -16,10 +16,10 @@ export async function analyzeMathStep(
   aiGuideContext: string, // New parameter for AI Guide instructions
   attemptCount: number = 0 // New parameter to track repeated errors for Step 0/1 logic
 ): Promise<AIAnalysis> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY;
+  const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY || process.env.API_KEY;
   if (!apiKey) {
     console.error("Gemini API Key is missing in analyzeMathStep");
-    throw new Error("Gemini API Key ontbreekt. Zorg dat GEMINI_API_KEY is ingesteld in de omgevingsvariabelen (Vercel) en doe een nieuwe Redeploy.");
+    throw new Error("Gemini API Key ontbreekt. Gebruik bij voorkeur de naam VITE_GEMINI_API_KEY in Vercel en doe een nieuwe Redeploy.");
   }
   const ai = new GoogleGenAI({ apiKey });
   try {
@@ -95,7 +95,7 @@ export async function analyzeMathStep(
 }
 
 export async function evaluateProgression(stats: SessionStats, currentLevel: DifficultyLevel, moduleId: string, aiGuideContext: string): Promise<AIProgression> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY;
+  const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY || process.env.API_KEY;
   if (!apiKey) {
     console.warn("Gemini API Key missing in evaluateProgression, skipping AI evaluation.");
     return { shouldLevelUp: false, newLevel: currentLevel, reasoning: "API Key missing", growthMessage: "Oeps", feedUp: "", feedback: "", feedForward: "", tip: "", encouragement: "" };
@@ -146,9 +146,9 @@ export async function analyzeClassPerformance(
   results: StudentResult[],
   aiGuideContext: string
 ): Promise<ClassAnalysis> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY;
+  const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY || process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("Gemini API Key ontbreekt voor klassenanalyse. Controleer de Vercel instellingen.");
+    throw new Error("Gemini API Key ontbreekt voor klassenanalyse. Gebruik VITE_GEMINI_API_KEY in Vercel.");
   }
   const ai = new GoogleGenAI({ apiKey });
   try {
@@ -213,10 +213,10 @@ export async function generateMathProblem(
   level: DifficultyLevel,
   aiGuideContext: string
 ): Promise<{ expression: string; steps: { content: string; operation?: string }[] }> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY;
+  const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY || process.env.API_KEY;
   if (!apiKey) {
     console.error("Gemini API Key is missing in generateMathProblem!");
-    throw new Error("Gemini API Key ontbreekt. Heb je de variabele GEMINI_API_KEY toegevoegd aan Vercel en daarna een nieuwe 'Redeploy' gedaan? Zonder redeploy worden nieuwe variabelen niet opgepikt in de browser.");
+    throw new Error("Gemini API Key ontbreekt. BELANGRIJK: Gebruik in Vercel de naam VITE_GEMINI_API_KEY (met VITE_ prefix) en doe daarna een nieuwe Redeploy. Zonder de VITE_ prefix kan de browser de variabele soms niet zien.");
   }
   const ai = new GoogleGenAI({ apiKey });
   const isEquation = moduleId.startsWith('vergelijkingen');
