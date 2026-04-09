@@ -342,6 +342,13 @@ const generatePassword = () => {
 // Helper for unified Supabase Error Handling
 const handleSupabaseError = (error: any, context: string) => {
   console.error(`Error in ${context}:`, error);
+  
+  // Handle network errors gracefully
+  if (error.message === 'Failed to fetch') {
+    console.warn(`Network error (Failed to fetch) during ${context}. This might be transient.`);
+    return;
+  }
+
   if (error.message?.includes('row-level security') || error.code === '42501') {
      alert(`RLS Fout bij ${context}: De database blokkeert deze actie. Zorg dat je het "supabase_rls_setup.sql" script hebt uitgevoerd in de Supabase SQL Editor.`);
   } else if (error.message?.includes('foreign key constraint')) {
@@ -583,7 +590,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
   // Polling for live alerts from Supabase
   useEffect(() => {
+    let isPolling = false;
     const checkAlerts = async () => {
+        if (isPolling) return;
+        isPolling = true;
         try {
             const { data, error } = await supabase.from('intervention_alerts').select('*');
             if (error) throw error;
@@ -605,17 +615,29 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     });
                 setAlerts(relevant);
             }
-        } catch (e) { console.error("Error polling alerts:", e); }
+        } catch (e) { 
+            console.error("Error polling alerts:", e); 
+        } finally {
+            isPolling = false;
+        }
     };
-    const interval = setInterval(checkAlerts, 2000); // Poll every 2s
+    const interval = setInterval(checkAlerts, 5000); // Poll every 5s
     checkAlerts();
     return () => clearInterval(interval);
   }, [role, classrooms, assignedClassIds]);
 
   // LIVE PRESENCE TRACKING
+  const presenceChannelRef = useRef<any>(null);
   useEffect(() => {
     if (activeTab === 'live') {
-        const channel = supabase.channel('online-users');
+        if (presenceChannelRef.current) {
+          supabase.removeChannel(presenceChannelRef.current);
+        }
+
+        // Use a unique channel name for the teacher to avoid "Lock broken" errors
+        const channel = supabase.channel(`online-users-teacher-${Date.now()}`);
+        presenceChannelRef.current = channel;
+
         channel
           .on('presence', { event: 'sync' }, () => {
              const state = channel.presenceState();
@@ -637,7 +659,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           .subscribe();
 
         return () => {
-            supabase.removeChannel(channel);
+            if (presenceChannelRef.current) {
+              supabase.removeChannel(presenceChannelRef.current);
+              presenceChannelRef.current = null;
+            }
         };
     }
   }, [activeTab]);
@@ -754,7 +779,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       }
     } catch (error: any) {
        console.error("Error in handleGenerateProblem:", error);
-       alert(`Er ging iets mis bij het genereren: ${error.message || "Onbekende fout"}. Probeer het opnieuw.`);
+       if (error.message === 'Failed to fetch') {
+          alert("Er kon geen verbinding worden gemaakt met de AI service. Controleer je internetverbinding of probeer het later opnieuw.");
+       } else {
+          alert(`Er ging iets mis bij het genereren: ${error.message || "Onbekende fout"}. Probeer het opnieuw.`);
+       }
     } finally {
        setIsGenerating(false);
     }

@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { ErrorType, SessionStats, DifficultyLevel, Problem, LearningDiary, UserInfo, AIProgression, ModuleId, ThemeConfig, DiaryEntry, Classroom, Teacher, StudentResult, InterventionAlert, SubModuleConfig, ModuleProgress, AIGuideConfig, Student, StepSuccessStatus } from './types';
 import { ProgressBar } from './components/ProgressBar';
 import { ProblemSolver } from './components/ProblemSolver';
@@ -181,8 +181,23 @@ const App: React.FC = () => {
 
         setIsLoading(true);
         try {
-            // Fetch teacher profile if not already set
-            const { data: teacher } = await supabase.from('teachers').select('*').eq('auth_id', user.id).maybeSingle();
+            // Fetch teacher profile if not already set with retry
+            const fetchTeacherWithRetry = async (retries = 2) => {
+              for (let i = 0; i < retries; i++) {
+                try {
+                  const res = await supabase.from('teachers').select('*').eq('auth_id', user.id).maybeSingle();
+                  if (res.error && (res.error.message === 'Failed to fetch' || res.error.message?.includes('fetch'))) {
+                    throw res.error;
+                  }
+                  return res;
+                } catch (err) {
+                  if (i === retries - 1) throw err;
+                  await new Promise(r => setTimeout(r, 1000));
+                }
+              }
+            };
+
+            const { data: teacher } = await fetchTeacherWithRetry();
             
             if (teacher) {
                 setUserInfo({
@@ -212,59 +227,84 @@ const App: React.FC = () => {
 
   // FETCH INITIAL DATA FROM SUPABASE
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const fetchInitialData = async (retries = 3) => {
       setIsLoading(true);
-      
-      // 1. Fetch Classrooms (Publicly visible for student login selection)
-      const { data: classesData } = await supabase.from('classrooms').select('*');
-      if (classesData) {
-        setClassrooms(classesData.map(c => ({
-          id: String(c.id),
-          name: c.name,
-          lockedModules: c.locked_modules || []
-        })));
-      }
+      try {
+        // Helper to handle retries for network errors
+        const safeFetch = async (fetchFn: () => Promise<any>) => {
+          let lastErr;
+          for (let i = 0; i < retries; i++) {
+            try {
+              const res = await fetchFn();
+              // Supabase error object can contain network errors
+              if (res.error && (res.error.message === 'Failed to fetch' || res.error.message?.includes('fetch'))) {
+                throw res.error;
+              }
+              return res;
+            } catch (err) {
+              lastErr = err;
+              if (i < retries - 1) await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+            }
+          }
+          throw lastErr;
+        };
 
-      // 2. Fetch Problems (Publicly visible)
-      const { data: problemsData } = await supabase.from('problems').select('*');
-      if (problemsData) {
-        setProblems(problemsData.map(p => ({
-          id: String(p.id),
-          expression: p.expression,
-          solution: p.solution,
-          operations: p.operations,
-          finalAnswer: p.final_answer,
-          level: p.level,
-          moduleId: p.module_id,
-          isCustom: p.is_custom
-        })));
-      }
+        // 1. Fetch Classrooms (Publicly visible for student login selection)
+        const { data: classesData, error: classesError } = await safeFetch(async () => await supabase.from('classrooms').select('*'));
+        if (classesError) throw classesError;
+        if (classesData) {
+          setClassrooms(classesData.map(c => ({
+            id: String(c.id),
+            name: c.name,
+            lockedModules: c.locked_modules || []
+          })));
+        }
 
-      // 3. Fetch AI Guide Config (Publicly visible)
-      const { data: configData } = await supabase.from('ai_guide_config').select('*').single();
-      if (configData) {
-        setAIGuideConfig({
-          version: configData.version,
-          lastUpdated: configData.last_updated,
-          sections: configData.sections
-        });
-      }
+        // 2. Fetch Problems (Publicly visible)
+        const { data: problemsData, error: problemsError } = await safeFetch(async () => await supabase.from('problems').select('*'));
+        if (problemsError) throw problemsError;
+        if (problemsData) {
+          setProblems(problemsData.map(p => ({
+            id: String(p.id),
+            expression: p.expression,
+            solution: p.solution,
+            operations: p.operations,
+            finalAnswer: p.final_answer,
+            level: p.level,
+            moduleId: p.module_id,
+            isCustom: p.is_custom
+          })));
+        }
 
-      // 4. Fetch Students (Publicly visible for student login selection - username check)
-      const { data: studentsData } = await supabase.from('students').select('*');
-      if (studentsData) {
-        setStudents(studentsData.map(s => ({
-          id: String(s.id),
-          firstName: s.first_name,
-          lastInitial: s.last_initial,
-          password: s.password,
-          classId: String(s.class_id)
-        })));
+        // 3. Fetch AI Guide Config (Publicly visible)
+        const { data: configData, error: configError } = await safeFetch(async () => await supabase.from('ai_guide_config').select('*').single());
+        if (configError && configError.code !== 'PGRST116') throw configError;
+        if (configData) {
+          setAIGuideConfig({
+            version: configData.version,
+            lastUpdated: configData.last_updated,
+            sections: configData.sections
+          });
+        }
+
+        // 4. Fetch Students (Publicly visible for student login selection - username check)
+        const { data: studentsData, error: studentsError } = await safeFetch(async () => await supabase.from('students').select('*'));
+        if (studentsError) throw studentsError;
+        if (studentsData) {
+          setStudents(studentsData.map(s => ({
+            id: String(s.id),
+            firstName: s.first_name,
+            lastInitial: s.last_initial,
+            password: s.password,
+            classId: String(s.class_id)
+          })));
+        }
+      } catch (err) {
+        console.error("Error fetching initial data:", err);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     };
-
     fetchInitialData();
   }, []);
 
@@ -366,21 +406,38 @@ const App: React.FC = () => {
   }, [userInfo, simulatedClassId]);
 
   // LIVE PRESENCE TRACKING
+  const presenceChannelRef = useRef<any>(null);
   useEffect(() => {
     if (userInfo?.role === 'student' && !simulatedClassId) {
-       const channel = supabase.channel('online-users');
-       channel.subscribe(async (status) => {
+       // Ensure we don't have multiple active channels for the same topic
+       if (presenceChannelRef.current) {
+         supabase.removeChannel(presenceChannelRef.current);
+       }
+
+       // Use a unique channel name per user to avoid "Lock broken" errors
+       // Adding a timestamp ensures that even if the same student logs in again, it's a fresh channel
+       const channel = supabase.channel(`online-users-student-${userInfo.firstName}-${userInfo.className}-${Date.now()}`);
+       presenceChannelRef.current = channel;
+
+       channel.subscribe(async (status: string) => {
          if (status === 'SUBSCRIBED') {
-           await channel.track({
-             studentName: userInfo.firstName,
-             className: userInfo.className,
-             onlineAt: new Date().toISOString()
-           });
+           try {
+             await channel.track({
+               studentName: userInfo.firstName,
+               className: userInfo.className,
+               onlineAt: new Date().toISOString()
+             });
+           } catch (err) {
+             console.error("Error tracking presence:", err);
+           }
          }
        });
 
        return () => {
-         supabase.removeChannel(channel);
+         if (presenceChannelRef.current) {
+           supabase.removeChannel(presenceChannelRef.current);
+           presenceChannelRef.current = null;
+         }
        };
     }
   }, [userInfo, simulatedClassId]);
@@ -586,14 +643,23 @@ const App: React.FC = () => {
   // Poll for unlock if intervention active
   useEffect(() => {
     let interval: any;
+    let isPolling = false;
     if (intervention.isActive && intervention.alertId && userInfo && !simulatedClassId) {
        interval = setInterval(async () => {
-          const { data } = await supabase.from('intervention_alerts').select('id').eq('id', intervention.alertId);
-          // If alert is gone from DB, unlock
-          if (!data || data.length === 0) {
-             handleUnlockIntervention();
+          if (isPolling) return;
+          isPolling = true;
+          try {
+             const { data } = await supabase.from('intervention_alerts').select('id').eq('id', intervention.alertId);
+             // If alert is gone from DB, unlock
+             if (!data || data.length === 0) {
+                handleUnlockIntervention();
+             }
+          } catch (err) {
+             console.error("Error polling intervention status:", err);
+          } finally {
+             isPolling = false;
           }
-       }, 2000);
+       }, 3000);
     }
     return () => clearInterval(interval);
   }, [intervention.isActive, intervention.alertId, userInfo, simulatedClassId]);

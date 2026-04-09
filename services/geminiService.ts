@@ -5,6 +5,23 @@ import { AIAnalysis, ErrorType, SessionStats, DifficultyLevel, AIProgression, Mo
 // GLOBAL_COACHING_GUIDELINE is now passed dynamically from the AI Guide config.
 // The content will be provided by the aiGuideContext parameter in each function.
 
+const getApiKey = () => {
+  try {
+    // Priority 1: Vite environment variables (standard for browser)
+    if (import.meta.env?.VITE_GEMINI_API_KEY) return import.meta.env.VITE_GEMINI_API_KEY;
+    if (import.meta.env?.VITE_API_KEY) return import.meta.env.VITE_API_KEY;
+    
+    // Priority 2: Node-style process.env (if polyfilled or in SSR)
+    if (typeof process !== 'undefined' && process.env) {
+      if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+      if (process.env.API_KEY) return process.env.API_KEY;
+    }
+  } catch (e) {
+    console.warn("Error accessing environment variables:", e);
+  }
+  return '';
+};
+
 export async function analyzeMathStep(
   expression: string,
   previousStep: string,
@@ -16,7 +33,7 @@ export async function analyzeMathStep(
   aiGuideContext: string, // New parameter for AI Guide instructions
   attemptCount: number = 0 // New parameter to track repeated errors for Step 0/1 logic
 ): Promise<AIAnalysis> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = getApiKey();
   if (!apiKey) {
     console.error("Gemini API Key is missing in analyzeMathStep");
     throw new Error("Gemini API Key ontbreekt. Zorg dat de variabele VITE_GEMINI_API_KEY (met VITE_ prefix) in Vercel staat en doe een nieuwe Redeploy zonder cache.");
@@ -95,7 +112,7 @@ export async function analyzeMathStep(
 }
 
 export async function evaluateProgression(stats: SessionStats, currentLevel: DifficultyLevel, moduleId: string, aiGuideContext: string): Promise<AIProgression> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = getApiKey();
   if (!apiKey) {
     console.warn("Gemini API Key missing in evaluateProgression, skipping AI evaluation.");
     return { shouldLevelUp: false, newLevel: currentLevel, reasoning: "API Key missing", growthMessage: "Oeps", feedUp: "", feedback: "", feedForward: "", tip: "", encouragement: "" };
@@ -146,7 +163,7 @@ export async function analyzeClassPerformance(
   results: StudentResult[],
   aiGuideContext: string
 ): Promise<ClassAnalysis> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = getApiKey();
   if (!apiKey) {
     throw new Error("Gemini API Key ontbreekt voor klassenanalyse. Gebruik VITE_GEMINI_API_KEY in Vercel.");
   }
@@ -213,7 +230,7 @@ export async function generateMathProblem(
   level: DifficultyLevel,
   aiGuideContext: string
 ): Promise<{ expression: string; steps: { content: string; operation?: string }[] }> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (import.meta as any).env?.VITE_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
+  const apiKey = getApiKey();
   if (!apiKey) {
     console.error("Gemini API Key is missing in generateMathProblem!");
     throw new Error("Gemini API Key ontbreekt. Gebruik in Vercel de naam VITE_GEMINI_API_KEY en doe een nieuwe Redeploy zonder cache.");

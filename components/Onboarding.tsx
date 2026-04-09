@@ -80,10 +80,23 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, 
     setError('');
 
     try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Helper for retrying login on network failure
+      const signInWithRetry = async (retries = 2) => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const res = await supabase.auth.signInWithPassword({ email, password });
+            if (res.error && (res.error.message === 'Failed to fetch' || res.error.message?.includes('fetch'))) {
+              throw res.error;
+            }
+            return res;
+          } catch (err) {
+            if (i === retries - 1) throw err;
+            await new Promise(r => setTimeout(r, 1000));
+          }
+        }
+      };
+
+      const { data: authData, error: authError } = await signInWithRetry();
 
       if (authError) throw authError;
 
@@ -91,11 +104,26 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, 
         console.log("Auth success, user ID:", authData.user.id);
 
         // Fetch teacher profile to get name and role
-        const { data: teacherData, error: dbError } = await supabase
-          .from('teachers')
-          .select('*')
-          .eq('auth_id', authData.user.id)
-          .maybeSingle(); // Use maybeSingle instead of single to avoid error if no row found
+        const fetchProfileWithRetry = async (retries = 2) => {
+          for (let i = 0; i < retries; i++) {
+            try {
+              const res = await supabase
+                .from('teachers')
+                .select('*')
+                .eq('auth_id', authData.user.id)
+                .maybeSingle();
+              if (res.error && (res.error.message === 'Failed to fetch' || res.error.message?.includes('fetch'))) {
+                throw res.error;
+              }
+              return res;
+            } catch (err) {
+              if (i === retries - 1) throw err;
+              await new Promise(r => setTimeout(r, 1000));
+            }
+          }
+        };
+
+        const { data: teacherData, error: dbError } = await fetchProfileWithRetry();
 
         if (dbError) {
             console.error("Database error fetching teacher:", dbError);
@@ -116,7 +144,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, 
       }
     } catch (err: any) {
       console.error("Login error:", err);
-      showError(err.message === "Invalid login credentials" ? "E-mail of wachtwoord is onjuist." : err.message);
+      let userMessage = err.message;
+      if (err.message === "Invalid login credentials") {
+        userMessage = "E-mail of wachtwoord is onjuist.";
+      } else if (err.message === "Failed to fetch") {
+        userMessage = "Netwerkfout: Kan geen verbinding maken met de inlogservice. Controleer je internetverbinding.";
+      }
+      showError(userMessage);
     } finally {
       setLoading(false);
     }
