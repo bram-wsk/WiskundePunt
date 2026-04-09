@@ -118,9 +118,11 @@ interface DatabaseTreeItemProps {
   onDelete: (id: string) => void;
   level?: number;
   showActions: boolean;
+  canDelete: boolean;
+  canEdit: boolean;
 }
 
-const DatabaseTreeItem: React.FC<DatabaseTreeItemProps> = ({ item, problems, onEdit, onDelete, level = 0, showActions }) => {
+const DatabaseTreeItem: React.FC<DatabaseTreeItemProps> = ({ item, problems, onEdit, onDelete, level = 0, showActions, canDelete, canEdit }) => {
   const hasSub = item.subModules && item.subModules.length > 0;
   
   // Filter problems belonging to this exact module (leaf node)
@@ -181,8 +183,8 @@ const DatabaseTreeItem: React.FC<DatabaseTreeItemProps> = ({ item, problems, onE
                         </div>
                         {showActions && (
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => onEdit(p)} className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center border-none cursor-pointer hover:bg-blue-100"><i className="fa-solid fa-pen text-xs"></i></button>
-                              <button onClick={() => onDelete(p.id)} className="w-8 h-8 bg-rose-50 text-rose-500 rounded-lg flex items-center justify-center border-none cursor-pointer hover:bg-rose-100"><i className="fa-solid fa-trash-can text-xs"></i></button>
+                              {canEdit && <button onClick={() => onEdit(p)} className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center border-none cursor-pointer hover:bg-blue-100"><i className="fa-solid fa-pen text-xs"></i></button>}
+                              {canDelete && <button onClick={() => onDelete(p.id)} className="w-8 h-8 bg-rose-50 text-rose-500 rounded-lg flex items-center justify-center border-none cursor-pointer hover:bg-rose-100"><i className="fa-solid fa-trash-can text-xs"></i></button>}
                           </div>
                         )}
                     </div>
@@ -1061,7 +1063,6 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               await supabase.from('student_progress').delete().match({ first_name: student.firstName, class_name: className });
           }
 
-          const { error } = await supabase.from('problems').delete().eq('id', id); // Note: This line seems incorrect in original context (deleting problem with student ID?). Assuming it meant deleting student.
           // Correcting to delete student:
           const { error: studentError } = await supabase.from('students').delete().eq('id', id);
           if (studentError) { throw studentError; }
