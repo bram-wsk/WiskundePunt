@@ -199,7 +199,7 @@ const DatabaseTreeItem: React.FC<DatabaseTreeItemProps> = ({ item, problems, onE
            {/* Vertical line for hierarchy visual */}
            <div className="absolute top-0 bottom-4 w-px bg-slate-200" style={{ left: `${level * 1.5 + 1.75}rem` }}></div>
            {item.subModules!.map((sub: any) => (
-             <DatabaseTreeItem key={sub.id} item={sub} problems={problems} onEdit={onEdit} onDelete={onDelete} level={level + 1} showActions={showActions} />
+             <DatabaseTreeItem key={sub.id} item={sub} problems={problems} onEdit={onEdit} onDelete={onDelete} level={level + 1} showActions={showActions} canDelete={canDelete} canEdit={canEdit} />
            ))}
         </div>
       )}
@@ -2172,6 +2172,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             onEdit={startEdit} 
                             onDelete={handleDeleteProblem} 
                             showActions={true}
+                            canDelete={role === 'admin'}
+                            canEdit={role === 'admin'}
                          />
                       ))
                    )}
