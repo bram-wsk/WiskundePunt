@@ -6,8 +6,11 @@ import { AIAnalysis, ErrorType, SessionStats, DifficultyLevel, AIProgression, Mo
 // The content will be provided by the aiGuideContext parameter in each function.
 
 const getApiKey = () => {
-  // Use process.env.GEMINI_API_KEY as per platform guidelines
-  return process.env.GEMINI_API_KEY || '';
+  try {
+    return process.env.GEMINI_API_KEY || '';
+  } catch (e) {
+    return '';
+  }
 };
 
 export async function analyzeMathStep(
@@ -18,39 +21,43 @@ export async function analyzeMathStep(
   moduleId: string,
   userOperation: string | undefined,
   expectedOperation: string | undefined,
-  aiGuideContext: string, // New parameter for AI Guide instructions
-  attemptCount: number = 0 // New parameter to track repeated errors for Step 0/1 logic
+  aiGuideContext: string,
+  attemptCount: number = 0
 ): Promise<AIAnalysis> {
   const apiKey = getApiKey();
   if (!apiKey) {
-    console.error("Gemini API Key is missing in analyzeMathStep");
+    console.error("Gemini API Key is missing!");
     throw new Error("Gemini API Key ontbreekt.");
   }
+  
   const ai = new GoogleGenAI({ apiKey });
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview", 
-      contents: `
-        Analyseer deze wiskunde stap voor module: ${moduleId}.
-        Opgave: ${expression}
-        Vorige stap: ${previousStep}
-        Invoer van leerling: ${userInput}
-        Verwachte stap: ${expectedStep}
-        ${userOperation ? `Ingevoerde bewerking: ${userOperation}` : ''}
-        ${expectedOperation ? `Verwachte bewerking: ${expectedOperation}` : ''}
-        
-        CONTEXT:
-        Dit is fout-poging nummer: ${attemptCount + 1} voor deze specifieke stap.
-        (Poging 1 = eerste keer dat de leerling deze stap fout doet).
 
-        INSTRUCTIES:
-        - Analyseer de rekenkundige juistheid, volgorde van bewerkingen, tekens (+/-), en slordigheden.
-        - Bij vergelijkingen: controleer de balans aan beide kanten.
-        - Bepaal ALLE types fouten uit de lijst: ${Object.values(ErrorType).join(', ')}.
-      `,
+  try {
+    const prompt = `
+      Analyseer deze wiskunde stap voor module: ${moduleId}.
+      Opgave: ${expression}
+      Vorige stap: ${previousStep}
+      Invoer van leerling: ${userInput}
+      Verwachte stap: ${expectedStep}
+      ${userOperation ? `Ingevoerde bewerking: ${userOperation}` : ''}
+      ${expectedOperation ? `Verwachte bewerking: ${expectedOperation}` : ''}
+      
+      CONTEXT:
+      Dit is fout-poging nummer: ${attemptCount + 1} voor deze specifieke stap.
+      (Poging 1 = eerste keer dat de leerling deze stap fout doet).
+
+      INSTRUCTIES:
+      - Analyseer de rekenkundige juistheid, volgorde van bewerkingen, tekens (+/-), en slordigheden.
+      - Bij vergelijkingen: controleer de balans aan beide kanten.
+      - Bepaal ALLE types fouten uit de lijst: ${Object.values(ErrorType).join(', ')}.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
       config: {
         systemInstruction: `
-          ${aiGuideContext} 
+          ${aiGuideContext || "Je bent een didactische wiskunde coach."} 
           
           BELANGRIJK:
           Volg de "DIDACTISCHE AANPAK" uit de bovenstaande gids strikt op basis van het pogingnummer:
@@ -69,21 +76,22 @@ export async function analyzeMathStep(
               items: { type: Type.STRING, enum: Object.values(ErrorType) },
               description: "Lijst van ALLE gedetecteerde fouten in deze ene stap."
             },
-            feedUp: { type: Type.STRING, description: "Wat is het doel?" },
-            feedback: { type: Type.STRING, description: "De directe reactie op de invoer van de leerling (volgens de didactische aanpak)." },
-            feedForward: { type: Type.STRING, description: "Socratische vraag die aanzet tot de volgende denkstap." },
-            tip: { type: Type.STRING, description: "Een subtiele hint of herinnering." },
-            encouragement: { type: Type.STRING, description: "Motiverende zin." }
+            feedUp: { type: Type.STRING },
+            feedback: { type: Type.STRING },
+            feedForward: { type: Type.STRING },
+            tip: { type: Type.STRING },
+            encouragement: { type: Type.STRING }
           },
           required: ["isCorrect", "errorTypes", "feedUp", "feedback", "feedForward", "tip", "encouragement"]
         }
       }
     });
-    
-    const text = response.text.trim();
-    return JSON.parse(text);
+
+    const text = response.text;
+    if (!text) throw new Error("Geen tekst ontvangen van AI.");
+    return JSON.parse(text.trim());
   } catch (error) {
-    console.error("AI Analysis Error:", error);
+    console.error("AI Analysis Error details:", error);
     return { 
       isCorrect: false, 
       errorTypes: [ErrorType.UNKNOWN], 
@@ -91,7 +99,7 @@ export async function analyzeMathStep(
       feedback: "Meneer Priem kon je stap even niet goed lezen. Kijk je notatie na of probeer het opnieuw.", 
       feedForward: "Probeer de stap nog eens in te vullen.", 
       tip: "Gebruik de knoppen op het scherm.", 
-      encouragement: "Zelfs computers maken soms een foutje!" 
+      encouragement: "Zet door!" 
     };
   }
 }
@@ -103,6 +111,7 @@ export async function evaluateProgression(stats: SessionStats, currentLevel: Dif
     return { shouldLevelUp: false, newLevel: currentLevel, reasoning: "API Key missing", growthMessage: "Oeps", feedUp: "", feedback: "", feedForward: "", tip: "", encouragement: "" };
   }
   const ai = new GoogleGenAI({ apiKey });
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -127,8 +136,11 @@ export async function evaluateProgression(stats: SessionStats, currentLevel: Dif
         }
       }
     });
-    return JSON.parse(response.text.trim());
+    const text = response.text;
+    if (!text) throw new Error("Geen tekst ontvangen.");
+    return JSON.parse(text.trim());
   } catch (e) {
+    console.error("Progression Evaluation Error:", e);
     return {
       shouldLevelUp: false,
       newLevel: currentLevel,
@@ -153,6 +165,7 @@ export async function analyzeClassPerformance(
     throw new Error("Gemini API Key ontbreekt voor klassenanalyse.");
   }
   const ai = new GoogleGenAI({ apiKey });
+
   try {
     const contents = `ANALYSEER DEZE VOLLEDIGE KLASRESULTATEN VOOR ${className}:
     ${JSON.stringify(results, null, 2)}
@@ -200,8 +213,11 @@ export async function analyzeClassPerformance(
         }
       }
     });
-    return JSON.parse(response.text.trim());
+    const text = response.text;
+    if (!text) throw new Error("Geen tekst ontvangen.");
+    return JSON.parse(text.trim());
   } catch (error) {
+    console.error("Class Analysis Error:", error);
     return {
       summary: "Er is onvoldoende data of de analyse kon niet worden voltooid.",
       crossModularTrends: [],
@@ -221,6 +237,7 @@ export async function generateMathProblem(
     throw new Error("Gemini API Key ontbreekt.");
   }
   const ai = new GoogleGenAI({ apiKey });
+
   const isEquation = moduleId.startsWith('vergelijkingen');
 
   try {
@@ -273,9 +290,10 @@ export async function generateMathProblem(
       }
     });
 
-    const text = response.text.trim();
+    const text = response.text;
+    if (!text) throw new Error("Geen tekst ontvangen.");
     console.log("Gemini response text (generateMathProblem):", text);
-    return JSON.parse(text);
+    return JSON.parse(text.trim());
   } catch (error) {
     console.error("AI Generation Error:", error);
     throw error;
