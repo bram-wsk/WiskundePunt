@@ -398,6 +398,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
 
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [changePasswordValue, setChangePasswordValue] = useState('');
+  const [confirmPasswordValue, setConfirmPasswordValue] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
 
@@ -411,6 +412,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           setPasswordMessage({ type: 'error', text: "Wachtwoord moet minimaal 6 tekens zijn." });
           return;
       }
+      if (changePasswordValue !== confirmPasswordValue) {
+          setPasswordMessage({ type: 'error', text: "Wachtwoorden komen niet overeen." });
+          return;
+      }
       setIsChangingPassword(true);
       try {
           const { error } = await supabase.auth.updateUser({ password: changePasswordValue });
@@ -419,6 +424,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           setTimeout(() => {
               setShowChangePasswordModal(false);
               setChangePasswordValue('');
+              setConfirmPasswordValue('');
               setPasswordMessage(null);
           }, 2000);
       } catch (e: any) {
@@ -2755,19 +2761,33 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                    </div>
                 )}
 
-                <input 
-                  type="password" 
-                  placeholder="Nieuw wachtwoord (min. 6 tekens)" 
-                  value={changePasswordValue} 
-                  onChange={(e) => {
-                    setChangePasswordValue(e.target.value);
-                    if (passwordMessage) setPasswordMessage(null);
-                  }} 
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 font-mono text-sm outline-none focus:border-blue-500 text-center" 
-                />
+                <div className="space-y-3">
+                   <input 
+                     type="password" 
+                     placeholder="Nieuw wachtwoord (min. 6 tekens)" 
+                     value={changePasswordValue} 
+                     onChange={(e) => {
+                       setChangePasswordValue(e.target.value);
+                       if (passwordMessage) setPasswordMessage(null);
+                     }} 
+                     className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 font-mono text-sm outline-none focus:border-blue-500 text-center" 
+                   />
+                   <input 
+                     type="password" 
+                     placeholder="Bevestig nieuw wachtwoord" 
+                     value={confirmPasswordValue} 
+                     onChange={(e) => {
+                       setConfirmPasswordValue(e.target.value);
+                       if (passwordMessage) setPasswordMessage(null);
+                     }} 
+                     className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 font-mono text-sm outline-none focus:border-blue-500 text-center" 
+                   />
+                </div>
                 <div className="flex gap-3">
                    <button onClick={() => {
                       setShowChangePasswordModal(false);
+                      setChangePasswordValue('');
+                      setConfirmPasswordValue('');
                       setPasswordMessage(null);
                    }} className="flex-1 py-4 rounded-xl bg-slate-100 text-slate-500 font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-colors border-none cursor-pointer">Annuleren</button>
                    <button onClick={handleChangePassword} disabled={isChangingPassword} className="flex-1 py-4 rounded-xl bg-blue-500 text-white font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-colors shadow-lg shadow-blue-200 border-none cursor-pointer disabled:opacity-50">
