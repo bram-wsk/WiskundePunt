@@ -385,6 +385,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
   );
   const seenAlertIdsRef = useRef<Set<string>>(new Set());
+  const mountedAtRef = useRef<number>(Date.now());
 
   const requestNotificationPermission = async () => {
     if (typeof Notification === 'undefined') {
@@ -634,12 +635,44 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     setViewStudentName('all');
   }, [viewClassId]);
 
-  // Polling for live alerts from Supabase
+  // Live alerts from Supabase (Realtime + Polling fallback)
   useEffect(() => {
-    let isPolling = false;
-    const checkAlerts = async () => {
-        if (isPolling) return;
-        isPolling = true;
+    const channel = supabase
+      .channel('intervention_alerts_changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'intervention_alerts' }, (payload) => {
+        const newAlert = payload.new as any;
+        const alert: InterventionAlert = {
+          id: newAlert.id,
+          studentName: newAlert.student_name,
+          className: newAlert.class_name,
+          errorType: newAlert.error_type,
+          moduleId: newAlert.module_id,
+          timestamp: newAlert.timestamp
+        };
+
+        // Check relevance
+        const classObj = classrooms.find(c => c.name === alert.className);
+        const isRelevant = role === 'admin' || (classObj && assignedClassIds?.includes(classObj.id));
+        
+        if (isRelevant && !seenAlertIdsRef.current.has(alert.id)) {
+          triggerNotification(alert);
+          seenAlertIdsRef.current.add(alert.id);
+          setAlerts(prev => {
+            if (prev.some(a => a.id === alert.id)) return prev;
+            return [alert, ...prev];
+          });
+        }
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'intervention_alerts' }, (payload) => {
+        setAlerts(prev => prev.filter(a => a.id !== payload.old.id));
+      })
+      .subscribe();
+
+    // Initial fetch and periodic sync
+    let isSyncing = false;
+    const syncAlerts = async () => {
+        if (isSyncing) return;
+        isSyncing = true;
         try {
             const { data, error } = await supabase.from('intervention_alerts').select('*');
             if (error) throw error;
@@ -660,10 +693,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         return classObj && assignedClassIds?.includes(classObj.id);
                     });
                 
-                // Trigger notifications for NEW alerts
+                // Only notify for alerts created AFTER mount to avoid spamming old alerts
                 relevant.forEach(alert => {
-                  if (!seenAlertIdsRef.current.has(alert.id)) {
+                  if (alert.timestamp > mountedAtRef.current && !seenAlertIdsRef.current.has(alert.id)) {
                     triggerNotification(alert);
+                    seenAlertIdsRef.current.add(alert.id);
+                  } else {
+                    // Mark old alerts as seen so we don't notify for them later
                     seenAlertIdsRef.current.add(alert.id);
                   }
                 });
@@ -671,14 +707,19 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 setAlerts(relevant);
             }
         } catch (e) { 
-            console.error("Error polling alerts:", e); 
+            console.error("Error syncing alerts:", e); 
         } finally {
-            isPolling = false;
+            isSyncing = false;
         }
     };
-    const interval = setInterval(checkAlerts, 5000); // Poll every 5s
-    checkAlerts();
-    return () => clearInterval(interval);
+
+    syncAlerts();
+    const interval = setInterval(syncAlerts, 10000); // Sync every 10s as fallback
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, [role, classrooms, assignedClassIds, triggerNotification]);
 
   // LIVE PRESENCE TRACKING

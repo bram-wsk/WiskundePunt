@@ -595,38 +595,40 @@ const App: React.FC = () => {
   }, []);
 
   const handleStepError = useCallback(async (types: ErrorType[]) => {
+    let triggeringErrorType: ErrorType | null = null;
+    
     setSessionErrorCounts(prev => {
       const newCounts = { ...prev };
-      let triggeringErrorType: ErrorType | null = null;
-
       types.forEach(type => {
          const newCount = (newCounts[type] || 0) + 1;
          newCounts[type] = newCount;
-         // Trigger intervention if a specific error type occurs 3 or more times
          if (newCount >= 3) {
             triggeringErrorType = type;
          }
       });
+      return newCounts;
+    });
 
-      if (triggeringErrorType) {
-        let newAlertId = undefined;
-        // Only broadcast alert if it's a real student session
-        if (userInfo?.role === 'student' && !simulatedClassId) {
-            newAlertId = `${Date.now()}-${userInfo.firstName}`;
-            // Push to Supabase
-            supabase.from('intervention_alerts').insert({
+    // Handle side effects outside the state updater
+    if (triggeringErrorType) {
+      let newAlertId = undefined;
+      if (userInfo?.role === 'student' && !simulatedClassId) {
+          newAlertId = `${Date.now()}-${userInfo.firstName}`;
+          try {
+            await supabase.from('intervention_alerts').insert({
               id: newAlertId,
               student_name: userInfo.firstName,
               class_name: userInfo.className,
               error_type: triggeringErrorType,
               module_id: activeModule || 'mix',
               timestamp: Date.now()
-            }).then();
-        }
-        setIntervention({ isActive: true, errorType: triggeringErrorType, alertId: newAlertId });
+            });
+          } catch (e) {
+            console.error("Error pushing alert to Supabase:", e);
+          }
       }
-      return newCounts;
-    });
+      setIntervention({ isActive: true, errorType: triggeringErrorType, alertId: newAlertId });
+    }
   }, [userInfo, activeModule, simulatedClassId]);
 
   const handleUnlockIntervention = async () => {
