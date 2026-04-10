@@ -380,6 +380,35 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [serverError, setServerError] = useState<string>('');
   const [manualAuthId, setManualAuthId] = useState('');
 
+  // Notification state
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
+    typeof Notification !== 'undefined' ? Notification.permission : 'default'
+  );
+  const seenAlertIdsRef = useRef<Set<string>>(new Set());
+
+  const requestNotificationPermission = async () => {
+    if (typeof Notification === 'undefined') {
+      alert("Notificaties worden niet ondersteund door deze browser.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+  };
+
+  const triggerNotification = useCallback((alert: InterventionAlert) => {
+    if (notificationPermission === 'granted') {
+      try {
+        new Notification(`Hulp nodig: ${alert.studentName}`, {
+          body: `${alert.studentName} uit ${alert.className} zit vast bij ${ERROR_LABELS[alert.errorType as ErrorType] || alert.errorType}.`,
+          icon: '/logo.png',
+          silent: false
+        });
+      } catch (e) {
+        console.error("Error triggering notification:", e);
+      }
+    }
+  }, [notificationPermission]);
+
   // Student management state
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [newStudentFirst, setNewStudentFirst] = useState('');
@@ -630,6 +659,15 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         const classObj = classrooms.find(c => c.name === a.className);
                         return classObj && assignedClassIds?.includes(classObj.id);
                     });
+                
+                // Trigger notifications for NEW alerts
+                relevant.forEach(alert => {
+                  if (!seenAlertIdsRef.current.has(alert.id)) {
+                    triggerNotification(alert);
+                    seenAlertIdsRef.current.add(alert.id);
+                  }
+                });
+
                 setAlerts(relevant);
             }
         } catch (e) { 
@@ -641,7 +679,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     const interval = setInterval(checkAlerts, 5000); // Poll every 5s
     checkAlerts();
     return () => clearInterval(interval);
-  }, [role, classrooms, assignedClassIds]);
+  }, [role, classrooms, assignedClassIds, triggerNotification]);
 
   // LIVE PRESENCE TRACKING
   const presenceChannelRef = useRef<any>(null);
@@ -1462,7 +1500,28 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
              <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-300">
                 <div className="bg-rose-50 border border-rose-100 p-8 rounded-[2rem] text-center shadow-sm">
                    <h3 className="text-rose-800 font-black text-2xl mb-2"><i className="fa-solid fa-satellite-dish mr-2"></i>Live Monitor</h3>
-                   <p className="text-rose-600 text-sm font-medium">Dit scherm ververst live. Leerlingen die vastzitten verschijnen hier.</p>
+                                       <p className="text-rose-600 text-sm font-medium mb-4">Dit scherm ververst live. Leerlingen die vastzitten verschijnen hier.</p>
+                    
+                    <div className="flex justify-center">
+                      {notificationPermission === 'default' && (
+                        <button 
+                          onClick={requestNotificationPermission}
+                          className="px-6 py-2 bg-rose-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-rose-600 transition-all border-none cursor-pointer flex items-center gap-2"
+                        >
+                          <i className="fa-solid fa-bell"></i> Notificaties inschakelen
+                        </button>
+                      )}
+                      {notificationPermission === 'granted' && (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
+                          <i className="fa-solid fa-circle-check"></i> Notificaties actief
+                        </div>
+                      )}
+                      {notificationPermission === 'denied' && (
+                        <div className="flex items-center gap-2 text-[10px] font-black text-rose-400 uppercase tracking-widest bg-white px-4 py-2 rounded-xl border border-rose-100">
+                          <i className="fa-solid fa-bell-slash"></i> Notificaties geblokkeerd
+                        </div>
+                      )}
+                    </div>
                 </div>
 
                 {/* ONLINE STUDENTS SECTION */}

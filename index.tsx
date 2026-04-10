@@ -5,7 +5,9 @@ import App from './App';
 import { registerSW } from 'virtual:pwa-register';
 
 // Register service worker
-registerSW({ immediate: true });
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  registerSW({ immediate: true });
+}
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
