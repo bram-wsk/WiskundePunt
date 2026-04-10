@@ -17,6 +17,9 @@ export default defineConfig(({ mode }) => {
         VitePWA({
           registerType: 'autoUpdate',
           includeAssets: ['logo.png', 'favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+          workbox: {
+            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
+          },
           manifest: {
             name: 'WiskundePunt V13',
             short_name: 'WiskundePunt',
