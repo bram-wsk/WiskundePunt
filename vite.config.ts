@@ -16,15 +16,24 @@ export default defineConfig(({ mode }) => {
         react(),
         VitePWA({
           registerType: 'autoUpdate',
-          includeAssets: ['logo.png', 'favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
+          includeAssets: ['logo.png'],
           workbox: {
             maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
+            globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          },
+          devOptions: {
+            enabled: true,
+            type: 'module',
           },
           manifest: {
             name: 'WiskundePunt V13',
             short_name: 'WiskundePunt',
             description: 'Interactief wiskundeplatform voor leerlingen en leerkrachten.',
             theme_color: '#2563eb',
+            background_color: '#ffffff',
+            display: 'standalone',
+            start_url: '/',
+            scope: '/',
             icons: [
               {
                 src: 'logo.png',
@@ -40,7 +49,13 @@ export default defineConfig(({ mode }) => {
                 src: 'logo.png',
                 sizes: '512x512',
                 type: 'image/png',
-                purpose: 'any maskable'
+                purpose: 'any'
+              },
+              {
+                src: 'logo.png',
+                sizes: '512x512',
+                type: 'image/png',
+                purpose: 'maskable'
               }
             ]
           }
