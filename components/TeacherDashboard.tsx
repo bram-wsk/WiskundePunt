@@ -2353,7 +2353,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                    {/* ADD TEACHER FORM */}
                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-4 space-y-3">
                       <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                          {showManualEntry ? 'Handmatig Koppelen (Stap 2/2)' : 'Nieuwe Leerkracht (Stap 1/2)'}
+                          {showManualEntry ? 'Handmatig Koppelen' : 'Nieuwe Leerkracht'}
                       </h4>
                       
                       {showManualEntry ? (
