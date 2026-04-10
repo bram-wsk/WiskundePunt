@@ -141,13 +141,8 @@ const ProblemSolverComponent: React.FC<ProblemSolverProps> = ({
       if (result.isCorrect) {
         handleSuccess(finalInput, userOperation, failedAttemptsCount);
       } else {
-        // Layered interaction: 1st error is fixed message, 2nd+ is AI
-        if (failedAttemptsCount === 0) {
-          const firstErrorMessage = `Oeps... Dit is niet helemaal juist, ${studentName}. Kijk jouw bewerking eens na.`;
-          handleFailure(finalInput, { ...result, feedback: firstErrorMessage }, userOperation);
-        } else {
-          handleFailure(finalInput, result, userOperation);
-        }
+        // Use the feedback from the AI as it is guided by the AI-sturing (AI Guide)
+        handleFailure(finalInput, result, userOperation);
       }
     } catch (err) {
       console.error("Critical submission error:", err);

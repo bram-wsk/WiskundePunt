@@ -6,20 +6,8 @@ import { AIAnalysis, ErrorType, SessionStats, DifficultyLevel, AIProgression, Mo
 // The content will be provided by the aiGuideContext parameter in each function.
 
 const getApiKey = () => {
-  try {
-    // Priority 1: Vite environment variables (standard for browser)
-    if (import.meta.env?.VITE_GEMINI_API_KEY) return import.meta.env.VITE_GEMINI_API_KEY;
-    if (import.meta.env?.VITE_API_KEY) return import.meta.env.VITE_API_KEY;
-    
-    // Priority 2: Node-style process.env (if polyfilled or in SSR)
-    if (typeof process !== 'undefined' && process.env) {
-      if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
-      if (process.env.API_KEY) return process.env.API_KEY;
-    }
-  } catch (e) {
-    console.warn("Error accessing environment variables:", e);
-  }
-  return '';
+  // Use process.env.GEMINI_API_KEY as per platform guidelines
+  return process.env.GEMINI_API_KEY || '';
 };
 
 export async function analyzeMathStep(
@@ -36,7 +24,7 @@ export async function analyzeMathStep(
   const apiKey = getApiKey();
   if (!apiKey) {
     console.error("Gemini API Key is missing in analyzeMathStep");
-    throw new Error("Gemini API Key ontbreekt. Zorg dat de variabele VITE_GEMINI_API_KEY (met VITE_ prefix) in Vercel staat en doe een nieuwe Redeploy zonder cache.");
+    throw new Error("Gemini API Key ontbreekt.");
   }
   const ai = new GoogleGenAI({ apiKey });
   try {
@@ -53,27 +41,24 @@ export async function analyzeMathStep(
         
         CONTEXT:
         Dit is fout-poging nummer: ${attemptCount + 1} voor deze specifieke stap.
-        (0 eerdere fouten = 1e poging, 1 eerdere fout = 2e poging, etc.)
+        (Poging 1 = eerste keer dat de leerling deze stap fout doet).
 
-        GEEF EEN COMPLETE ANALYSE, SOCRATISCH INGESTOKEN:
-        - Kijk naar de rekenkundige juistheid.
-        - Kijk naar de volgorde van bewerkingen.
-        - Kijk naar de tekens (+/-).
-        - Kijk naar slordigheden bij het overschrijven.
-        - Bij vergelijkingen: kijk of de balans aan BEIDE kanten correct is toegepast.
+        INSTRUCTIES:
+        - Analyseer de rekenkundige juistheid, volgorde van bewerkingen, tekens (+/-), en slordigheden.
+        - Bij vergelijkingen: controleer de balans aan beide kanten.
+        - Bepaal ALLE types fouten uit de lijst: ${Object.values(ErrorType).join(', ')}.
       `,
       config: {
-        systemInstruction: `${aiGuideContext} 
-        
-        BELANGRIJK VOOR FEEDBACK FASE:
-        Pas de "DIDACTISCHE AANPAK" uit de gids strikt toe op basis van het pogingnummer:
-        - Indien poging 1 (nog geen eerdere fouten): Dit is STAP 0. De feedback wordt in de UI overschreven, maar analyseer de fouten wel voor de statistieken.
-        - Indien poging 2+ (al eerdere fouten): Dit is STAP 1. Schakel over naar socratische begeleiding. 
-          * Benoem de fout expliciet (bv. "tekenfout" of "rekenfout").
-          * Stel gerichte vragen (feedback/feedForward) om de leerling zelf tot inzicht te laten komen.
-          * HOU DE FEEDBACK ZEER KORT: MAXIMAAL 30 TOKENS.
-        
-        Bepaal ook ALLE types fouten uit de lijst: ${Object.values(ErrorType).join(', ')}.`,
+        systemInstruction: `
+          ${aiGuideContext} 
+          
+          BELANGRIJK:
+          Volg de "DIDACTISCHE AANPAK" uit de bovenstaande gids strikt op basis van het pogingnummer:
+          - Poging 1: Pas "STAP 0" toe (subtiel, zelf laten controleren, geen tips).
+          - Poging 2 of meer: Pas "STAP 1" toe (Socratische methode, gerichte vragen).
+          
+          HOU DE FEEDBACK ZEER KORT: MAXIMAAL 30 WOORDEN.
+        `,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -85,9 +70,9 @@ export async function analyzeMathStep(
               description: "Lijst van ALLE gedetecteerde fouten in deze ene stap."
             },
             feedUp: { type: Type.STRING, description: "Wat is het doel?" },
-            feedback: { type: Type.STRING, description: "Socratische vraag/vragen die de leerling naar de fout(en) leidt." },
-            feedForward: { type: Type.STRING, description: "Socratische vraag die aanzet tot de volgende denkstap om de fout te corrigeren." },
-            tip: { type: Type.STRING, description: "Een subtiele, Socratische hint of herinnering (mogelijk ook een vraag)." },
+            feedback: { type: Type.STRING, description: "De directe reactie op de invoer van de leerling (volgens de didactische aanpak)." },
+            feedForward: { type: Type.STRING, description: "Socratische vraag die aanzet tot de volgende denkstap." },
+            tip: { type: Type.STRING, description: "Een subtiele hint of herinnering." },
             encouragement: { type: Type.STRING, description: "Motiverende zin." }
           },
           required: ["isCorrect", "errorTypes", "feedUp", "feedback", "feedForward", "tip", "encouragement"]
@@ -165,7 +150,7 @@ export async function analyzeClassPerformance(
 ): Promise<ClassAnalysis> {
   const apiKey = getApiKey();
   if (!apiKey) {
-    throw new Error("Gemini API Key ontbreekt voor klassenanalyse. Gebruik VITE_GEMINI_API_KEY in Vercel.");
+    throw new Error("Gemini API Key ontbreekt voor klassenanalyse.");
   }
   const ai = new GoogleGenAI({ apiKey });
   try {
@@ -233,7 +218,7 @@ export async function generateMathProblem(
   const apiKey = getApiKey();
   if (!apiKey) {
     console.error("Gemini API Key is missing in generateMathProblem!");
-    throw new Error("Gemini API Key ontbreekt. Gebruik in Vercel de naam VITE_GEMINI_API_KEY en doe een nieuwe Redeploy zonder cache.");
+    throw new Error("Gemini API Key ontbreekt.");
   }
   const ai = new GoogleGenAI({ apiKey });
   const isEquation = moduleId.startsWith('vergelijkingen');
