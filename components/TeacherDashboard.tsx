@@ -408,8 +408,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           setPasswordMessage({ type: 'error', text: "Voer een nieuw wachtwoord in." });
           return;
       }
-      if (changePasswordValue.length < 6) {
-          setPasswordMessage({ type: 'error', text: "Wachtwoord moet minimaal 6 tekens zijn." });
+      if (changePasswordValue.length < 8) {
+          setPasswordMessage({ type: 'error', text: "Wachtwoord moet minimaal 8 tekens zijn." });
           return;
       }
       if (changePasswordValue !== confirmPasswordValue) {
@@ -2764,7 +2764,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <div className="space-y-3">
                    <input 
                      type="password" 
-                     placeholder="Nieuw wachtwoord (min. 6 tekens)" 
+                     placeholder="Nieuw wachtwoord (min. 8 tekens)" 
                      value={changePasswordValue} 
                      onChange={(e) => {
                        setChangePasswordValue(e.target.value);
