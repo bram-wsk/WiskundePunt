@@ -399,21 +399,30 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [changePasswordValue, setChangePasswordValue] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
 
   const handleChangePassword = async () => {
+      setPasswordMessage(null);
+      if (!changePasswordValue) {
+          setPasswordMessage({ type: 'error', text: "Voer een nieuw wachtwoord in." });
+          return;
+      }
       if (changePasswordValue.length < 6) {
-          alert("Wachtwoord moet minimaal 6 tekens zijn.");
+          setPasswordMessage({ type: 'error', text: "Wachtwoord moet minimaal 6 tekens zijn." });
           return;
       }
       setIsChangingPassword(true);
       try {
           const { error } = await supabase.auth.updateUser({ password: changePasswordValue });
           if (error) throw error;
-          alert("Wachtwoord succesvol gewijzigd!");
-          setShowChangePasswordModal(false);
-          setChangePasswordValue('');
+          setPasswordMessage({ type: 'success', text: "Wachtwoord succesvol gewijzigd!" });
+          setTimeout(() => {
+              setShowChangePasswordModal(false);
+              setChangePasswordValue('');
+              setPasswordMessage(null);
+          }, 2000);
       } catch (e: any) {
-          alert(`Fout bij wijzigen wachtwoord: ${e.message}`);
+          setPasswordMessage({ type: 'error', text: `Fout: ${e.message}` });
       } finally {
           setIsChangingPassword(false);
       }
@@ -1428,7 +1437,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors font-black text-[10px] uppercase tracking-widest border-none cursor-pointer"
                 >
                     <i className="fa-solid fa-key"></i>
-                    <span className="hidden sm:inline">Wachtwoord</span>
+                    <span className="inline">Wachtwoord</span>
                 </button>
                 <button 
                     onClick={onClose} 
@@ -2719,41 +2728,56 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                              );
                           })}
                        </div>
-                    </div>
-                 )}
+                     </div>
+                  )}
+              </div>
+          </div>,
+          portalTarget
+        )}
+
+        {/* CHANGE PASSWORD MODAL - MOVED OUTSIDE PRINTABLE AREA PORTAL */}
+        {portalTarget && showChangePasswordModal && createPortal(
+          <div className="fixed inset-0 z-[2200] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+             <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center space-y-6 animate-in zoom-in-95 duration-200 border-4 border-blue-50">
+                <div className="w-20 h-20 bg-blue-100 text-blue-500 rounded-3xl flex items-center justify-center mx-auto text-3xl shadow-inner">
+                   <i className="fa-solid fa-key"></i>
+                </div>
+                <div>
+                   <h3 className="text-xl font-black text-slate-900 mb-2">Wachtwoord Wijzigen</h3>
+                   <p className="text-slate-500 font-bold text-sm">
+                     Kies een nieuw, veilig wachtwoord.
+                   </p>
+                </div>
+
+                {passwordMessage && (
+                   <div className={`p-3 rounded-xl text-xs font-bold animate-in slide-in-from-top-1 ${passwordMessage.type === 'success' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                      {passwordMessage.text}
+                   </div>
+                )}
+
+                <input 
+                  type="password" 
+                  placeholder="Nieuw wachtwoord (min. 6 tekens)" 
+                  value={changePasswordValue} 
+                  onChange={(e) => {
+                    setChangePasswordValue(e.target.value);
+                    if (passwordMessage) setPasswordMessage(null);
+                  }} 
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 font-mono text-sm outline-none focus:border-blue-500 text-center" 
+                />
+                <div className="flex gap-3">
+                   <button onClick={() => {
+                      setShowChangePasswordModal(false);
+                      setPasswordMessage(null);
+                   }} className="flex-1 py-4 rounded-xl bg-slate-100 text-slate-500 font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-colors border-none cursor-pointer">Annuleren</button>
+                   <button onClick={handleChangePassword} disabled={isChangingPassword} className="flex-1 py-4 rounded-xl bg-blue-500 text-white font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-colors shadow-lg shadow-blue-200 border-none cursor-pointer disabled:opacity-50">
+                      {isChangingPassword ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Opslaan'}
+                   </button>
+                </div>
              </div>
-          {/* CHANGE PASSWORD MODAL */}
-          {showChangePasswordModal && (
-            <div className="fixed inset-0 z-[2200] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-               <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl max-w-sm w-full text-center space-y-6 animate-in zoom-in-95 duration-200 border-4 border-blue-50">
-                  <div className="w-20 h-20 bg-blue-100 text-blue-500 rounded-3xl flex items-center justify-center mx-auto text-3xl shadow-inner">
-                     <i className="fa-solid fa-key"></i>
-                  </div>
-                  <div>
-                     <h3 className="text-xl font-black text-slate-900 mb-2">Wachtwoord Wijzigen</h3>
-                     <p className="text-slate-500 font-bold text-sm">
-                       Kies een nieuw, veilig wachtwoord.
-                     </p>
-                  </div>
-                  <input 
-                    type="password" 
-                    placeholder="Nieuw wachtwoord (min. 6 tekens)" 
-                    value={changePasswordValue} 
-                    onChange={(e) => setChangePasswordValue(e.target.value)} 
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 font-mono text-sm outline-none focus:border-blue-500 text-center" 
-                  />
-                  <div className="flex gap-3">
-                     <button onClick={() => setShowChangePasswordModal(false)} className="flex-1 py-4 rounded-xl bg-slate-100 text-slate-500 font-black uppercase text-[10px] tracking-widest hover:bg-slate-200 transition-colors border-none cursor-pointer">Annuleren</button>
-                     <button onClick={handleChangePassword} disabled={isChangingPassword || changePasswordValue.length < 6} className="flex-1 py-4 rounded-xl bg-blue-500 text-white font-black uppercase text-[10px] tracking-widest hover:bg-blue-600 transition-colors shadow-lg shadow-blue-200 border-none cursor-pointer disabled:opacity-50">
-                        {isChangingPassword ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Opslaan'}
-                     </button>
-                  </div>
-               </div>
-            </div>
-          )}
-        </div>,
-        portalTarget
-      )}
+          </div>,
+          portalTarget
+        )}
     </div>
   );
 };
