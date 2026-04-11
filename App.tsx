@@ -12,6 +12,7 @@ import { SetPasswordModal } from './components/SetPasswordModal';
 import { evaluateProgression } from './services/geminiService';
 import { supabase } from './services/supabaseClient';
 import { DEFAULT_AI_GUIDE_CONFIG } from './constants';
+import { Logo } from './components/Logo';
 
 const DEFAULT_SESSION_TARGET = 5;
 
@@ -909,7 +910,7 @@ const App: React.FC = () => {
       <div className={`w-full max-w-5xl ${isSimulating ? 'pt-8' : ''} pt-[env(safe-area-inset-top,0px)]`}>
         <header className="flex items-center justify-between mb-8 md:mb-12 px-4 md:px-0">
            <div className="flex items-center gap-2 md:gap-4 cursor-pointer" onClick={handleReturnToHub}>
-              <img src="/logo.png" alt="Logo" className="h-12 md:h-20 w-auto" />
+              <Logo size="lg" />
            </div>
            
            <div className="flex items-center gap-2 md:gap-3">

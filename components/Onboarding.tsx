@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { UserInfo, Classroom, Teacher, Student } from '../types';
 import { AvatarCoach } from './AvatarCoach';
 import { supabase } from '../services/supabaseClient';
+import { Logo } from './Logo';
 
 interface OnboardingProps {
   onComplete: (info: UserInfo) => void;
@@ -239,8 +240,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, 
       
       <div className="max-w-md w-full animate-in fade-in zoom-in-95 duration-500">
         <div className="bg-white p-10 rounded-[3rem] shadow-2xl border border-blue-50 text-center space-y-8 relative">
-          <header className="space-y-6">
-            <img src="/logo.png" alt="Logo" className="w-72 mx-auto mb-6" />
+          <header className="space-y-6 flex justify-center">
+            <Logo size="xl" />
           </header>
 
           {step === 'choice' && (
