@@ -1403,7 +1403,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             <div className="flex items-center gap-2 md:gap-4">
                 <div className="relative group">
                     <img 
-                      src="https://raw.githubusercontent.com/bombaert/WiskundePunt/main/logo.png" 
+                      src="/logo.png" 
                       alt="meneer Priem Logo" 
                       className="w-10 md:w-12 h-auto drop-shadow-md transition-transform group-hover:scale-110"
                     />

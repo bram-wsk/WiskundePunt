@@ -909,7 +909,7 @@ const App: React.FC = () => {
       <div className={`w-full max-w-5xl ${isSimulating ? 'pt-8' : ''} pt-[env(safe-area-inset-top,0px)]`}>
         <header className="flex items-center justify-between mb-8 md:mb-12 px-4 md:px-0">
            <div className="flex items-center gap-2 md:gap-4 cursor-pointer" onClick={handleReturnToHub}>
-              <img src="https://raw.githubusercontent.com/bombaert/WiskundePunt/main/logo.png" alt="Logo" className="h-12 md:h-20 w-auto" />
+              <img src="/logo.png" alt="Logo" className="h-12 md:h-20 w-auto" />
            </div>
            
            <div className="flex items-center gap-2 md:gap-3">

@@ -32,23 +32,23 @@ export default defineConfig(({ mode }) => {
             scope: '/',
             icons: [
               {
-                src: 'https://raw.githubusercontent.com/bombaert/WiskundePunt/main/logo.png',
+                src: 'logo.png',
                 sizes: '192x192',
                 type: 'image/png'
               },
               {
-                src: 'https://raw.githubusercontent.com/bombaert/WiskundePunt/main/logo.png',
+                src: 'logo.png',
                 sizes: '512x512',
                 type: 'image/png'
               },
               {
-                src: 'https://raw.githubusercontent.com/bombaert/WiskundePunt/main/logo.png',
+                src: 'logo.png',
                 sizes: '512x512',
                 type: 'image/png',
                 purpose: 'any'
               },
               {
-                src: 'https://raw.githubusercontent.com/bombaert/WiskundePunt/main/logo.png',
+                src: 'logo.png',
                 sizes: '512x512',
                 type: 'image/png',
                 purpose: 'maskable'
