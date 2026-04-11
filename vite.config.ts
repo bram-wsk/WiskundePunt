@@ -25,30 +25,30 @@ export default defineConfig(({ mode }) => {
             name: 'WiskundePunt V13',
             short_name: 'WiskundePunt',
             description: 'Interactief wiskundeplatform voor leerlingen en leerkrachten.',
-            theme_color: '#2563eb',
+            theme_color: '#ffffff',
             background_color: '#ffffff',
             display: 'standalone',
             start_url: '/',
             scope: '/',
             icons: [
               {
-                src: 'logo.png',
+                src: '/logo.png?v=2',
                 sizes: '192x192',
                 type: 'image/png'
               },
               {
-                src: 'logo.png',
+                src: '/logo.png?v=2',
                 sizes: '512x512',
                 type: 'image/png'
               },
               {
-                src: 'logo.png',
+                src: '/logo.png?v=2',
                 sizes: '512x512',
                 type: 'image/png',
                 purpose: 'any'
               },
               {
-                src: 'logo.png',
+                src: '/logo.png?v=2',
                 sizes: '512x512',
                 type: 'image/png',
                 purpose: 'maskable'

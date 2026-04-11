@@ -1403,7 +1403,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         <header className="sticky top-0 z-[100] bg-white/90 backdrop-blur-xl border-b border-slate-200/60 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shadow-sm pt-[env(safe-area-inset-top,44px)]">
             <div className="flex items-center gap-2 md:gap-4">
                 <div className="relative group">
-                    <Logo size="md" className="transition-transform group-hover:scale-110" />
+                    <Logo size="md" variant="icon" className="transition-transform group-hover:scale-110" />
                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full shadow-sm"></div>
                 </div>
                 <div className="hidden xs:block">

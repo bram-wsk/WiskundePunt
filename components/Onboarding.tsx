@@ -241,7 +241,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, 
       <div className="max-w-md w-full animate-in fade-in zoom-in-95 duration-500">
         <div className="bg-white p-10 rounded-[3rem] shadow-2xl border border-blue-50 text-center space-y-8 relative">
           <header className="space-y-6 flex justify-center">
-            <Logo size="xl" />
+            <Logo size="xl" variant="icon" />
           </header>
 
           {step === 'choice' && (
