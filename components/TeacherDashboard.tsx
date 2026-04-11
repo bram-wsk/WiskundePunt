@@ -1572,14 +1572,14 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           )}
 
           {activeTab === 'access' && (
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm h-full flex flex-col animate-in slide-in-from-bottom-2 duration-300">
-               <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-black text-slate-800 flex items-center gap-2"><i className="fa-solid fa-lock text-blue-500"></i> Toegangsbeheer</h3>
-                  <div className="flex gap-2">
+            <div className="bg-white p-4 md:p-8 rounded-[2.5rem] border border-slate-200 shadow-sm h-full flex flex-col animate-in slide-in-from-bottom-2 duration-300">
+               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+                  <h3 className="text-xl font-black text-slate-800 flex items-center gap-2 shrink-0"><i className="fa-solid fa-lock text-blue-500"></i> Toegangsbeheer</h3>
+                  <div className="flex gap-2 w-full lg:w-auto">
                      {activeAccessClass && (
                         <>
-                           <button onClick={() => handleBulkAccess(activeAccessClass.id, 'lock_all')} className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-100 transition-colors border-none cursor-pointer">Alles Vergrendelen</button>
-                           <button onClick={() => handleBulkAccess(activeAccessClass.id, 'unlock_all')} className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-colors border-none cursor-pointer">Alles Ontgrendelen</button>
+                           <button onClick={() => handleBulkAccess(activeAccessClass.id, 'lock_all')} className="flex-1 lg:flex-none px-3 py-2.5 bg-rose-50 text-rose-600 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest hover:bg-rose-100 transition-colors border-none cursor-pointer whitespace-nowrap">Alles Vergrendelen</button>
+                           <button onClick={() => handleBulkAccess(activeAccessClass.id, 'unlock_all')} className="flex-1 lg:flex-none px-3 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl font-black text-[9px] sm:text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-colors border-none cursor-pointer whitespace-nowrap">Alles Ontgrendelen</button>
                         </>
                      )}
                   </div>
