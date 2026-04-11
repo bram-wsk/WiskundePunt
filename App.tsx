@@ -907,13 +907,16 @@ const App: React.FC = () => {
       )}
 
       <div className={`w-full max-w-5xl ${isSimulating ? 'pt-8' : ''}`}>
-        <header className="flex items-center justify-between mb-12">
-           <div className="flex items-center gap-4 cursor-pointer" onClick={handleReturnToHub}>
-              <img src="/logo.png" alt="Logo" className="h-20 w-auto" />
+        <header className="flex items-center justify-between mb-8 md:mb-12">
+           <div className="flex items-center gap-2 md:gap-4 cursor-pointer" onClick={handleReturnToHub}>
+              <img src="/logo.png" alt="Logo" className="h-12 md:h-20 w-auto" />
            </div>
            
-           <div className="flex items-center gap-3">
-             <button onClick={() => setShowLogoutConfirm(true)} className="bg-white border-2 border-slate-200 px-5 py-3 rounded-2xl text-slate-500 hover:text-rose-600 transition-all font-black text-[10px] uppercase tracking-widest cursor-pointer">Afmelden</button>
+           <div className="flex items-center gap-2 md:gap-3">
+             <button onClick={() => setShowLogoutConfirm(true)} className="bg-white border-2 border-slate-200 px-4 md:px-5 py-2 md:py-3 rounded-xl md:rounded-2xl text-slate-500 hover:text-rose-600 transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest cursor-pointer">
+               <i className="fa-solid fa-power-off md:mr-2"></i>
+               <span className="hidden md:inline">Afmelden</span>
+             </button>
            </div>
         </header>
 
@@ -922,16 +925,16 @@ const App: React.FC = () => {
         ) : isFinished ? (
           <SessionSummary stats={stats} onRestart={handleReturnToHub} onLogout={() => setShowLogoutConfirm(true)} progression={progressionInfo} isEvaluating={isEvaluatingGrowth} />
         ) : (
-          <div className="space-y-6">
-            <div className="bg-white px-8 py-5 rounded-[2.5rem] border border-blue-50 shadow-sm flex items-center justify-between">
-              <button onClick={handleReturnToHub} className="text-slate-400 hover:text-blue-600 transition-all cursor-pointer bg-transparent border-none">
-                <i className="fa-solid fa-chevron-left mr-2"></i> Terug
+          <div className="space-y-4 md:space-y-6">
+            <div className="bg-white px-4 md:px-8 py-3 md:py-5 rounded-2xl md:rounded-[2.5rem] border border-blue-50 shadow-sm flex items-center justify-between">
+              <button onClick={handleReturnToHub} className="text-slate-400 hover:text-blue-600 transition-all cursor-pointer bg-transparent border-none flex items-center">
+                <i className="fa-solid fa-chevron-left md:mr-2"></i> <span className="hidden md:inline">Terug</span>
               </button>
-              <div className="flex items-center gap-4 flex-1 mx-6">
+              <div className="flex items-center gap-2 md:gap-4 flex-1 mx-3 md:mx-6">
                  <ProgressBar current={solvedCount} total={DEFAULT_SESSION_TARGET} />
-                 <span className="text-[10px] font-black text-slate-400 uppercase whitespace-nowrap">{solvedCount}/{DEFAULT_SESSION_TARGET}</span>
+                 <span className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase whitespace-nowrap">{solvedCount}/{DEFAULT_SESSION_TARGET}</span>
               </div>
-              <button onClick={handleFinishEarly} className="text-emerald-600 font-black uppercase text-[10px] tracking-widest bg-emerald-50 px-4 py-2 rounded-xl border-none cursor-pointer">Afronden</button>
+              <button onClick={handleFinishEarly} className="text-emerald-600 font-black uppercase text-[9px] md:text-[10px] tracking-widest bg-emerald-50 px-3 md:px-4 py-2 rounded-lg md:rounded-xl border-none cursor-pointer">Afronden</button>
             </div>
 
             {currentProblem ? (

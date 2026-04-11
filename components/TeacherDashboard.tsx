@@ -1399,14 +1399,14 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
         {/* HEADER / TOP NAV */}
-        <header className="sticky top-0 z-[100] bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-3 flex items-center justify-between shadow-sm">
-            <div className="flex items-center gap-4">
+        <header className="sticky top-0 z-[100] bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-6 py-3 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-2 md:gap-4">
                 <img 
                   src="/logo.png" 
                   alt="meneer Priem Logo" 
-                  className="w-12 h-auto drop-shadow-sm"
+                  className="w-10 md:w-12 h-auto drop-shadow-sm"
                 />
-                <div>
+                <div className="hidden xs:block">
                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">{role === 'admin' ? 'Beheerder' : 'Leerkracht'}</p>
                 </div>
             </div>
@@ -1437,26 +1437,61 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 })}
             </nav>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2">
                 <button 
                     onClick={() => setShowChangePasswordModal(true)} 
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors font-black text-[10px] uppercase tracking-widest border-none cursor-pointer"
+                    className="flex items-center justify-center md:justify-start gap-2 w-10 h-10 md:w-auto md:px-4 md:py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors font-black text-[10px] uppercase tracking-widest border-none cursor-pointer"
+                    title="Wachtwoord wijzigen"
                 >
                     <i className="fa-solid fa-key"></i>
-                    <span className="inline">Wachtwoord</span>
+                    <span className="hidden md:inline">Wachtwoord</span>
                 </button>
                 <button 
                     onClick={onClose} 
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-colors font-black text-[10px] uppercase tracking-widest border-none cursor-pointer"
+                    className="flex items-center justify-center md:justify-start gap-2 w-10 h-10 md:w-auto md:px-4 md:py-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-colors font-black text-[10px] uppercase tracking-widest border-none cursor-pointer"
+                    title="Afmelden"
                 >
                     <i className="fa-solid fa-power-off"></i>
-                    <span className="hidden sm:inline">Afmelden</span>
+                    <span className="hidden md:inline">Afmelden</span>
                 </button>
             </div>
         </header>
 
+        {/* MOBILE BOTTOM NAV */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-2 flex items-center justify-start overflow-x-auto no-scrollbar shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+            <div className="flex items-center gap-1 min-w-full justify-around">
+                {navStructure.map(item => {
+                    if (item.adminOnly && role !== 'admin') return null;
+                    const isActive = activeTab === item.id;
+                    return (
+                        <button
+                            key={item.id}
+                            onClick={() => setActiveTab(item.id as DashboardTab)}
+                            className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all border-none cursor-pointer relative flex-shrink-0 min-w-[64px] ${
+                                isActive 
+                                    ? 'text-blue-600' 
+                                    : 'text-slate-400 hover:text-slate-600'
+                            }`}
+                        >
+                            <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${isActive ? 'bg-blue-50' : ''}`}>
+                                <i className={`fa-solid ${item.icon} text-lg`}></i>
+                            </div>
+                            <span className={`text-[8px] font-black uppercase tracking-tighter ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
+                                {item.label.split(' ')[0]}
+                            </span>
+                            {item.id === 'live' && alerts.length > 0 && (
+                                <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold animate-pulse">
+                                    {alerts.length}
+                                </span>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+        </nav>
+
         {/* MAIN CONTENT AREA */}
-        <main className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-8 overflow-y-auto">
+        <main className="flex-1 w-full max-w-7xl mx-auto p-4 md:p-8 overflow-y-auto pb-24 md:pb-8">
           
           {activeTab === 'live' && (
              <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-300">
