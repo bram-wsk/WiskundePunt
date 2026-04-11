@@ -1461,9 +1461,9 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
         </header>
 
         {/* MOBILE BOTTOM NAV */}
-        <div className="md:hidden fixed bottom-6 left-4 right-4 z-[100] pb-[env(safe-area-inset-bottom,0px)]">
-            <nav className="bg-white/90 backdrop-blur-2xl border border-slate-200/50 px-2 py-2 flex items-center justify-start overflow-x-auto no-scrollbar shadow-[0_12px_40px_rgba(0,0,0,0.12)] rounded-[2.5rem]">
-                <div className="flex items-center gap-1 min-w-full justify-around">
+        <div className="md:hidden fixed bottom-3 left-4 right-4 z-[100] pb-[env(safe-area-inset-bottom,0px)]">
+            <nav className="bg-slate-900/95 backdrop-blur-2xl border border-white/10 px-1 py-1.5 flex items-center justify-start overflow-x-auto no-scrollbar shadow-[0_12px_40px_rgba(0,0,0,0.3)] rounded-[2rem]">
+                <div className="flex items-center gap-0.5 min-w-full justify-around">
                     {navStructure.map(item => {
                         if (item.adminOnly && role !== 'admin') return null;
                         const isActive = activeTab === item.id;
@@ -1471,20 +1471,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             <button
                                 key={item.id}
                                 onClick={() => setActiveTab(item.id as DashboardTab)}
-                                className={`flex flex-col items-center justify-center gap-1 p-2 rounded-2xl transition-all border-none cursor-pointer relative flex-shrink-0 min-w-[60px] ${
+                                className={`flex flex-col items-center justify-center gap-1 p-1.5 rounded-2xl transition-all border-none cursor-pointer relative flex-shrink-0 min-w-[56px] ${
                                     isActive 
-                                        ? 'text-blue-600' 
-                                        : 'text-slate-400 hover:text-slate-600'
+                                        ? 'text-white' 
+                                        : 'text-slate-500 hover:text-slate-400'
                                 }`}
                             >
-                                <div className={`w-11 h-11 flex items-center justify-center rounded-2xl transition-all ${isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105' : 'hover:bg-slate-50'}`}>
-                                    <i className={`fa-solid ${item.icon} text-lg`}></i>
+                                <div className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${isActive ? 'bg-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.4)] scale-105' : 'hover:bg-white/5'}`}>
+                                    <i className={`fa-solid ${item.icon} text-base`}></i>
                                 </div>
-                                <span className={`text-[7px] font-black uppercase tracking-widest ${isActive ? 'text-blue-600' : 'text-slate-400'}`}>
+                                <span className={`text-[7px] font-black uppercase tracking-[0.15em] ${isActive ? 'text-white' : 'text-slate-600'}`}>
                                     {item.label.split(' ')[0]}
                                 </span>
                                 {item.id === 'live' && alerts.length > 0 && (
-                                    <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold ring-2 ring-white animate-pulse">
+                                    <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold ring-2 ring-slate-900 animate-pulse">
                                         {alerts.length}
                                     </span>
                                 )}
