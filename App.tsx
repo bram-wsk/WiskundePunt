@@ -875,7 +875,7 @@ const App: React.FC = () => {
 
   // Otherwise, render the student-focused UI (including simulated student view)
   return (
-    <div className="min-h-screen py-6 md:py-10 px-4 flex flex-col items-center bg-slate-50 relative overflow-x-hidden">
+    <div className="min-h-[100dvh] pb-6 md:pb-10 px-4 flex flex-col items-center bg-white relative overflow-x-hidden">
       
       {/* Student-specific modals */}
       {intervention.isActive && intervention.errorType && (
@@ -906,8 +906,8 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <div className={`w-full max-w-5xl ${isSimulating ? 'pt-8' : ''}`}>
-        <header className="flex items-center justify-between mb-8 md:mb-12">
+      <div className={`w-full max-w-5xl ${isSimulating ? 'pt-8' : ''} pt-[env(safe-area-inset-top,0px)]`}>
+        <header className="flex items-center justify-between mb-8 md:mb-12 px-4 md:px-0">
            <div className="flex items-center gap-2 md:gap-4 cursor-pointer" onClick={handleReturnToHub}>
               <img src="/logo.png" alt="Logo" className="h-12 md:h-20 w-auto" />
            </div>

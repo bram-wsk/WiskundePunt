@@ -231,7 +231,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-blue-50/30 flex items-center justify-center p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-[100] bg-blue-50/30 flex items-center justify-center p-6 overflow-y-auto pt-[env(safe-area-inset-top,24px)] pb-[env(safe-area-inset-bottom,24px)]">
       <AvatarCoach 
         message={getGreetingMessage()} 
         type={error ? 'error' : 'info'}
