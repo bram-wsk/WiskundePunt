@@ -385,6 +385,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
   );
   const [isPushSubscribed, setIsPushSubscribed] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const seenAlertIdsRef = useRef<Set<string>>(new Set());
   const mountedAtRef = useRef<number>(Date.now());
 
@@ -433,6 +434,29 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       console.log("Push subscription successful");
     } catch (error) {
       console.error("Error subscribing to push:", error);
+      alert("Fout bij activeren achtergrondmeldingen: " + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
+  const sendTestNotification = async () => {
+    try {
+      await fetch('/api/push/send', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: 'Test Melding',
+          body: 'Dit is een test om te zien of achtergrondmeldingen werken.',
+          url: '/'
+        }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      alert("Test-signaal verzonden naar de server.");
+    } catch (error) {
+      console.error("Error sending test push:", error);
+      alert("Fout bij verzenden test-signaal.");
     }
   };
 
@@ -1623,8 +1647,24 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             <i className="fa-solid fa-circle-check"></i> Notificaties actief
                           </div>
                           <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest mt-2">
-                            {isPushSubscribed ? 'Inclusief achtergrondmeldingen' : 'Bezig met activeren achtergrondmeldingen...'}
+                            {isPushSubscribed ? 'Inclusief achtergrondmeldingen' : isSubscribing ? 'Bezig met activeren...' : 'Achtergrondmeldingen niet actief'}
                           </p>
+                          {isPushSubscribed && (
+                            <button 
+                              onClick={sendTestNotification}
+                              className="mt-4 px-4 py-2 bg-white border border-emerald-200 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-all cursor-pointer"
+                            >
+                              Test Achtergrondmelding
+                            </button>
+                          )}
+                          {!isPushSubscribed && !isSubscribing && (
+                            <button 
+                              onClick={subscribeToPush}
+                              className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all cursor-pointer border-none"
+                            >
+                              Activeer Achtergrondmeldingen
+                            </button>
+                          )}
                         </div>
                       )}
                       {notificationPermission === 'denied' && (

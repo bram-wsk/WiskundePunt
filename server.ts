@@ -33,21 +33,30 @@ async function startServer() {
   // API Route: Push Subscribe
   app.post("/api/push/subscribe", (req, res) => {
     const subscription = req.body;
+    console.log("New push subscription received:", subscription.endpoint);
     if (!subscriptions.find(s => s.endpoint === subscription.endpoint)) {
       subscriptions.push(subscription);
+      console.log("Subscription added. Total subscriptions:", subscriptions.length);
+    } else {
+      console.log("Subscription already exists.");
     }
-    res.status(201).json({});
+    res.status(201).json({ success: true });
   });
 
   // API Route: Push Send (Triggered by student app)
   app.post("/api/push/send", async (req, res) => {
     const { title, body, url } = req.body;
+    console.log(`Sending push notification: "${title}" to ${subscriptions.length} subscribers.`);
+    
     const payload = JSON.stringify({ title, body, url });
 
     const notifications = subscriptions.map(subscription => {
-      return webpush.sendNotification(subscription, payload).catch(error => {
-        console.error("Error sending push notification:", error);
+      return webpush.sendNotification(subscription, payload).then(() => {
+        console.log("Push sent successfully to:", subscription.endpoint);
+      }).catch(error => {
+        console.error("Error sending push notification to:", subscription.endpoint, error.statusCode);
         if (error.statusCode === 404 || error.statusCode === 410) {
+          console.log("Removing expired subscription:", subscription.endpoint);
           subscriptions = subscriptions.filter(s => s.endpoint !== subscription.endpoint);
         }
       });
