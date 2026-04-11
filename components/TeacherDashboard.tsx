@@ -384,8 +384,57 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
   );
+  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
   const seenAlertIdsRef = useRef<Set<string>>(new Set());
   const mountedAtRef = useRef<number>(Date.now());
+
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/\-/g, '+')
+      .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  };
+
+  const subscribeToPush = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      console.warn("Push notifications not supported");
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+      
+      if (!publicKey) {
+        console.error("VITE_VAPID_PUBLIC_KEY is missing");
+        return;
+      }
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey)
+      });
+
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        body: JSON.stringify(subscription),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      setIsPushSubscribed(true);
+      console.log("Push subscription successful");
+    } catch (error) {
+      console.error("Error subscribing to push:", error);
+    }
+  };
 
   const requestNotificationPermission = async () => {
     if (typeof Notification === 'undefined') {
@@ -394,7 +443,23 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     }
     const permission = await Notification.requestPermission();
     setNotificationPermission(permission);
+    
+    if (permission === 'granted') {
+      await subscribeToPush();
+    }
   };
+
+  // Check existing subscription on mount
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        setIsPushSubscribed(!!subscription);
+      }
+    };
+    checkSubscription();
+  }, []);
 
   const triggerNotification = useCallback((alert: InterventionAlert) => {
     if (notificationPermission === 'granted') {
@@ -1553,8 +1618,13 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         </button>
                       )}
                       {notificationPermission === 'granted' && (
-                        <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
-                          <i className="fa-solid fa-circle-check"></i> Notificaties actief
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
+                            <i className="fa-solid fa-circle-check"></i> Notificaties actief
+                          </div>
+                          <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest mt-2">
+                            {isPushSubscribed ? 'Inclusief achtergrondmeldingen' : 'Bezig met activeren achtergrondmeldingen...'}
+                          </p>
                         </div>
                       )}
                       {notificationPermission === 'denied' && (

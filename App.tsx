@@ -615,6 +615,7 @@ const App: React.FC = () => {
       if (userInfo?.role === 'student' && !simulatedClassId) {
           newAlertId = `${Date.now()}-${userInfo.firstName}`;
           try {
+            // 1. Push to Supabase for the live monitor dashboard
             await supabase.from('intervention_alerts').insert({
               id: newAlertId,
               student_name: userInfo.firstName,
@@ -623,8 +624,22 @@ const App: React.FC = () => {
               module_id: activeModule || 'mix',
               timestamp: Date.now()
             });
+
+            // 2. Trigger background push notification via our server
+            fetch('/api/push/send', {
+              method: 'POST',
+              body: JSON.stringify({
+                title: `Hulp nodig: ${userInfo.firstName}`,
+                body: `${userInfo.firstName} uit ${userInfo.className} zit vast bij ${triggeringErrorType}.`,
+                url: '/'
+              }),
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }).catch(err => console.error("Error triggering push:", err));
+
           } catch (e) {
-            console.error("Error pushing alert to Supabase:", e);
+            console.error("Error pushing alert:", e);
           }
       }
       setIntervention({ isActive: true, errorType: triggeringErrorType, alertId: newAlertId });

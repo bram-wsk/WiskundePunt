@@ -15,11 +15,13 @@ export default defineConfig(({ mode }) => {
       plugins: [
         react(),
         VitePWA({
+          strategies: 'injectManifest',
+          srcDir: 'src',
+          filename: 'sw.ts',
           registerType: 'autoUpdate',
           includeAssets: ['logo.png'],
-          workbox: {
-            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
-            globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          injectManifest: {
+            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           },
           manifest: {
             name: 'WiskundePunt V13',
