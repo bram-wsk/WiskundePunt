@@ -414,9 +414,8 @@ const App: React.FC = () => {
          supabase.removeChannel(presenceChannelRef.current);
        }
 
-       // Use a unique channel name per user to avoid "Lock broken" errors
-       // Adding a timestamp ensures that even if the same student logs in again, it's a fresh channel
-       const channel = supabase.channel(`online-users-student-${userInfo.firstName}-${userInfo.className}-${Date.now()}`);
+       // Use a consistent channel name for all users to enable presence tracking
+       const channel = supabase.channel('online-presence-main');
        presenceChannelRef.current = channel;
 
        channel.subscribe(async (status: string) => {
@@ -595,55 +594,38 @@ const App: React.FC = () => {
   }, []);
 
   const handleStepError = useCallback(async (types: ErrorType[]) => {
-    let triggeringErrorType: ErrorType | null = null;
-    
     setSessionErrorCounts(prev => {
       const newCounts = { ...prev };
+      let triggeringErrorType: ErrorType | null = null;
+
       types.forEach(type => {
          const newCount = (newCounts[type] || 0) + 1;
          newCounts[type] = newCount;
+         // Trigger intervention if a specific error type occurs 3 or more times
          if (newCount >= 3) {
             triggeringErrorType = type;
          }
       });
-      return newCounts;
-    });
 
-    // Handle side effects outside the state updater
-    if (triggeringErrorType) {
-      let newAlertId = undefined;
-      if (userInfo?.role === 'student' && !simulatedClassId) {
-          newAlertId = `${Date.now()}-${userInfo.firstName}`;
-          try {
-            // 1. Push to Supabase for the live monitor dashboard
-            await supabase.from('intervention_alerts').insert({
+      if (triggeringErrorType) {
+        let newAlertId = undefined;
+        // Only broadcast alert if it's a real student session
+        if (userInfo?.role === 'student' && !simulatedClassId) {
+            newAlertId = `${Date.now()}-${userInfo.firstName}`;
+            // Push to Supabase
+            supabase.from('intervention_alerts').insert({
               id: newAlertId,
               student_name: userInfo.firstName,
               class_name: userInfo.className,
               error_type: triggeringErrorType,
               module_id: activeModule || 'mix',
               timestamp: Date.now()
-            });
-
-            // 2. Trigger background push notification via our server
-            fetch('/api/push/send', {
-              method: 'POST',
-              body: JSON.stringify({
-                title: `Hulp nodig: ${userInfo.firstName}`,
-                body: `${userInfo.firstName} uit ${userInfo.className} zit vast bij ${triggeringErrorType}.`,
-                url: '/'
-              }),
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            }).catch(err => console.error("Error triggering push:", err));
-
-          } catch (e) {
-            console.error("Error pushing alert:", e);
-          }
+            }).then();
+        }
+        setIntervention({ isActive: true, errorType: triggeringErrorType, alertId: newAlertId });
       }
-      setIntervention({ isActive: true, errorType: triggeringErrorType, alertId: newAlertId });
-    }
+      return newCounts;
+    });
   }, [userInfo, activeModule, simulatedClassId]);
 
   const handleUnlockIntervention = async () => {

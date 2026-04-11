@@ -380,125 +380,6 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [serverError, setServerError] = useState<string>('');
   const [manualAuthId, setManualAuthId] = useState('');
 
-  // Notification state
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(
-    typeof Notification !== 'undefined' ? Notification.permission : 'default'
-  );
-  const [isPushSubscribed, setIsPushSubscribed] = useState(false);
-  const [isSubscribing, setIsSubscribing] = useState(false);
-  const seenAlertIdsRef = useRef<Set<string>>(new Set());
-  const mountedAtRef = useRef<number>(Date.now());
-
-  const urlBase64ToUint8Array = (base64String: string) => {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-      .replace(/\-/g, '+')
-      .replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  };
-
-  const subscribeToPush = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.warn("Push notifications not supported");
-      return;
-    }
-
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-      
-      if (!publicKey) {
-        console.error("VITE_VAPID_PUBLIC_KEY is missing");
-        return;
-      }
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey)
-      });
-
-      await fetch('/api/push/subscribe', {
-        method: 'POST',
-        body: JSON.stringify(subscription),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      setIsPushSubscribed(true);
-      console.log("Push subscription successful");
-    } catch (error) {
-      console.error("Error subscribing to push:", error);
-      alert("Fout bij activeren achtergrondmeldingen: " + (error instanceof Error ? error.message : String(error)));
-    } finally {
-      setIsSubscribing(false);
-    }
-  };
-
-  const sendTestNotification = async () => {
-    try {
-      await fetch('/api/push/send', {
-        method: 'POST',
-        body: JSON.stringify({
-          title: 'Test Melding',
-          body: 'Dit is een test om te zien of achtergrondmeldingen werken.',
-          url: '/'
-        }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      alert("Test-signaal verzonden naar de server.");
-    } catch (error) {
-      console.error("Error sending test push:", error);
-      alert("Fout bij verzenden test-signaal.");
-    }
-  };
-
-  const requestNotificationPermission = async () => {
-    if (typeof Notification === 'undefined') {
-      alert("Notificaties worden niet ondersteund door deze browser.");
-      return;
-    }
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
-    
-    if (permission === 'granted') {
-      await subscribeToPush();
-    }
-  };
-
-  // Check existing subscription on mount
-  useEffect(() => {
-    const checkSubscription = async () => {
-      if ('serviceWorker' in navigator && 'PushManager' in window) {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        setIsPushSubscribed(!!subscription);
-      }
-    };
-    checkSubscription();
-  }, []);
-
-  const triggerNotification = useCallback((alert: InterventionAlert) => {
-    if (notificationPermission === 'granted') {
-      try {
-        new Notification(`Hulp nodig: ${alert.studentName}`, {
-          body: `${alert.studentName} uit ${alert.className} zit vast bij ${ERROR_LABELS[alert.errorType as ErrorType] || alert.errorType}.`,
-          icon: '/logo.png',
-          silent: false
-        });
-      } catch (e) {
-        console.error("Error triggering notification:", e);
-      }
-    }
-  }, [notificationPermission]);
-
   // Student management state
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [newStudentFirst, setNewStudentFirst] = useState('');
@@ -724,44 +605,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     setViewStudentName('all');
   }, [viewClassId]);
 
-  // Live alerts from Supabase (Realtime + Polling fallback)
+  // Polling for live alerts from Supabase
   useEffect(() => {
-    const channel = supabase
-      .channel('intervention_alerts_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'intervention_alerts' }, (payload) => {
-        const newAlert = payload.new as any;
-        const alert: InterventionAlert = {
-          id: newAlert.id,
-          studentName: newAlert.student_name,
-          className: newAlert.class_name,
-          errorType: newAlert.error_type,
-          moduleId: newAlert.module_id,
-          timestamp: newAlert.timestamp
-        };
-
-        // Check relevance
-        const classObj = classrooms.find(c => c.name === alert.className);
-        const isRelevant = role === 'admin' || (classObj && assignedClassIds?.includes(classObj.id));
-        
-        if (isRelevant && !seenAlertIdsRef.current.has(alert.id)) {
-          triggerNotification(alert);
-          seenAlertIdsRef.current.add(alert.id);
-          setAlerts(prev => {
-            if (prev.some(a => a.id === alert.id)) return prev;
-            return [alert, ...prev];
-          });
-        }
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'intervention_alerts' }, (payload) => {
-        setAlerts(prev => prev.filter(a => a.id !== payload.old.id));
-      })
-      .subscribe();
-
-    // Initial fetch and periodic sync
-    let isSyncing = false;
-    const syncAlerts = async () => {
-        if (isSyncing) return;
-        isSyncing = true;
+    let isPolling = false;
+    const checkAlerts = async () => {
+        if (isPolling) return;
+        isPolling = true;
         try {
             const { data, error } = await supabase.from('intervention_alerts').select('*');
             if (error) throw error;
@@ -781,35 +630,18 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         const classObj = classrooms.find(c => c.name === a.className);
                         return classObj && assignedClassIds?.includes(classObj.id);
                     });
-                
-                // Only notify for alerts created AFTER mount to avoid spamming old alerts
-                relevant.forEach(alert => {
-                  if (alert.timestamp > mountedAtRef.current && !seenAlertIdsRef.current.has(alert.id)) {
-                    triggerNotification(alert);
-                    seenAlertIdsRef.current.add(alert.id);
-                  } else {
-                    // Mark old alerts as seen so we don't notify for them later
-                    seenAlertIdsRef.current.add(alert.id);
-                  }
-                });
-
                 setAlerts(relevant);
             }
         } catch (e) { 
-            console.error("Error syncing alerts:", e); 
+            console.error("Error polling alerts:", e); 
         } finally {
-            isSyncing = false;
+            isPolling = false;
         }
     };
-
-    syncAlerts();
-    const interval = setInterval(syncAlerts, 10000); // Sync every 10s as fallback
-
-    return () => {
-      supabase.removeChannel(channel);
-      clearInterval(interval);
-    };
-  }, [role, classrooms, assignedClassIds, triggerNotification]);
+    const interval = setInterval(checkAlerts, 5000); // Poll every 5s
+    checkAlerts();
+    return () => clearInterval(interval);
+  }, [role, classrooms, assignedClassIds]);
 
   // LIVE PRESENCE TRACKING
   const presenceChannelRef = useRef<any>(null);
@@ -819,8 +651,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
           supabase.removeChannel(presenceChannelRef.current);
         }
 
-        // Use a unique channel name for the teacher to avoid "Lock broken" errors
-        const channel = supabase.channel(`online-users-teacher-${Date.now()}`);
+        // Use the same consistent channel name as the students
+        const channel = supabase.channel('online-presence-main');
         presenceChannelRef.current = channel;
 
         channel
@@ -1630,49 +1462,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
              <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-300">
                 <div className="bg-rose-50 border border-rose-100 p-8 rounded-[2rem] text-center shadow-sm">
                    <h3 className="text-rose-800 font-black text-2xl mb-2"><i className="fa-solid fa-satellite-dish mr-2"></i>Live Monitor</h3>
-                                       <p className="text-rose-600 text-sm font-medium mb-4">Dit scherm ververst live. Leerlingen die vastzitten verschijnen hier.</p>
-                    
-                    <div className="flex justify-center">
-                      {notificationPermission === 'default' && (
-                        <button 
-                          onClick={requestNotificationPermission}
-                          className="px-6 py-2 bg-rose-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg hover:bg-rose-600 transition-all border-none cursor-pointer flex items-center gap-2"
-                        >
-                          <i className="fa-solid fa-bell"></i> Notificaties inschakelen
-                        </button>
-                      )}
-                      {notificationPermission === 'granted' && (
-                        <div className="flex flex-col items-center gap-2">
-                          <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
-                            <i className="fa-solid fa-circle-check"></i> Notificaties actief
-                          </div>
-                          <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest mt-2">
-                            {isPushSubscribed ? 'Inclusief achtergrondmeldingen' : isSubscribing ? 'Bezig met activeren...' : 'Achtergrondmeldingen niet actief'}
-                          </p>
-                          {isPushSubscribed && (
-                            <button 
-                              onClick={sendTestNotification}
-                              className="mt-4 px-4 py-2 bg-white border border-emerald-200 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-50 transition-all cursor-pointer"
-                            >
-                              Test Achtergrondmelding
-                            </button>
-                          )}
-                          {!isPushSubscribed && !isSubscribing && (
-                            <button 
-                              onClick={subscribeToPush}
-                              className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all cursor-pointer border-none"
-                            >
-                              Activeer Achtergrondmeldingen
-                            </button>
-                          )}
-                        </div>
-                      )}
-                      {notificationPermission === 'denied' && (
-                        <div className="flex items-center gap-2 text-[10px] font-black text-rose-400 uppercase tracking-widest bg-white px-4 py-2 rounded-xl border border-rose-100">
-                          <i className="fa-solid fa-bell-slash"></i> Notificaties geblokkeerd
-                        </div>
-                      )}
-                    </div>
+                   <p className="text-rose-600 text-sm font-medium">Dit scherm ververst live. Leerlingen die vastzitten verschijnen hier.</p>
                 </div>
 
                 {/* ONLINE STUDENTS SECTION */}
