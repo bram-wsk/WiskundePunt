@@ -50,6 +50,8 @@ export interface Student {
   lastInitial: string;
   password: string;
   classId: string;
+  isLowStimulus?: boolean;
+  ttsEnabled?: boolean;
 }
 
 export interface UserInfo {
@@ -58,6 +60,8 @@ export interface UserInfo {
   className: string;
   role: 'student' | 'teacher' | 'admin';
   assignedClassIds?: string[]; // Voor leerkrachten
+  isLowStimulus?: boolean;
+  ttsEnabled?: boolean;
 }
 
 export interface Problem {

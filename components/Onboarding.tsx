@@ -66,9 +66,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, 
     if (foundStudent) {
         const studentClass = classrooms.find(c => c.id === foundStudent.classId);
         onComplete({ 
+            id: foundStudent.id,
             firstName: foundStudent.firstName, 
             className: studentClass?.name || 'Onbekende Klas', 
-            role: 'student' 
+            role: 'student',
+            isLowStimulus: foundStudent.isLowStimulus,
+            ttsEnabled: foundStudent.ttsEnabled
         });
     } else {
         showError("Hmm, dat klopt niet helemaal. Probeer opnieuw.");

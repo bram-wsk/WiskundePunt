@@ -2,6 +2,7 @@
 import React, { memo, useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ErrorType } from '../types';
+import { useLowStimulus } from '../hooks/useLowStimulus';
 
 interface AvatarCoachProps {
   message: string;
@@ -13,6 +14,7 @@ interface AvatarCoachProps {
 
 export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = 'info', title, onAskHelp, identifiedErrors = [] }) => {
   const [visibleMessage, setVisibleMessage] = useState('');
+  const { isLowStimulus } = useLowStimulus();
   
   const cleanMessage = (msg: string) => {
     if (!msg) return "";
@@ -36,6 +38,12 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
   useEffect(() => {
     setVisibleMessage('');
     const cleaned = cleanMessage(message);
+    
+    if (isLowStimulus) {
+      setVisibleMessage(cleaned);
+      return;
+    }
+
     let i = 0;
     const interval = setInterval(() => {
       setVisibleMessage(cleaned.slice(0, i));
@@ -72,7 +80,7 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
       {message && (
         <div className={`
             mb-2 mr-4 p-5 rounded-2xl border backdrop-blur-md pointer-events-auto 
-            animate-in slide-in-from-bottom-4 fade-in duration-300 relative
+            ${isLowStimulus ? '' : 'animate-in slide-in-from-bottom-4 fade-in duration-300'} relative
             ${bubbleStyles[type]}
           `}>
           
@@ -101,7 +109,7 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
           </div>
 
           {showHelpButton && (
-            <div className="absolute -top-3 -right-3 animate-in zoom-in duration-300 delay-500">
+            <div className={`absolute -top-3 -right-3 ${isLowStimulus ? '' : 'animate-in zoom-in duration-300 delay-500'}`}>
                <button 
                  onClick={onAskHelp}
                  className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-all cursor-pointer border-2 border-white"
@@ -121,8 +129,8 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
         </div>
       )}
 
-      <div className="relative w-28 h-28 md:w-36 md:h-36 pointer-events-auto transition-transform hover:-translate-y-1 duration-300 -mr-2 cursor-grab active:cursor-grabbing">
-        <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl overflow-visible">
+      <div className={`relative w-28 h-28 md:w-36 md:h-36 pointer-events-auto ${isLowStimulus ? '' : 'transition-transform hover:-translate-y-1 duration-300'} -mr-2 cursor-grab active:cursor-grabbing`}>
+        <svg viewBox="0 0 200 200" className={`w-full h-full ${isLowStimulus ? '' : 'drop-shadow-xl'} overflow-visible`}>
           <defs>
             <clipPath id="circleClip">
               <circle cx="100" cy="100" r="95" />
@@ -131,14 +139,14 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
 
           {/* Minimal Background Aura */}
           <circle cx="100" cy="100" r="95" 
-            className={`transition-colors duration-500 ${
+            className={`${isLowStimulus ? '' : 'transition-colors duration-500'} ${
               type === 'error' ? 'fill-rose-50' : 
               type === 'success' ? 'fill-emerald-50' : 
               type === 'thinking' ? 'fill-amber-50' : 'fill-slate-50'
             }`} 
           />
 
-          <g className="animate-[breathe_4s_infinite_ease-in-out]" clipPath="url(#circleClip)">
+          <g className={isLowStimulus ? '' : 'animate-[breathe_4s_infinite_ease-in-out]'} clipPath="url(#circleClip)">
             {/* Shoulders / Sweater Base */}
             <path d="M 25 200 C 25 135, 55 140, 100 140 C 145 140, 175 135, 175 200 Z" fill="#0f4c5c" />
             
@@ -176,7 +184,7 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
             <path d="M 137 60 L 135 72 L 133.5 72 L 133.5 60 Z" fill="#3b2818" />
 
             {/* Eyes (Calm, intelligent) */}
-            <g className="animate-[blink_5s_infinite]">
+            <g className={isLowStimulus ? '' : 'animate-[blink_5s_infinite]'}>
               <circle cx={type === 'thinking' ? 78 : 80} cy={type === 'thinking' ? 85 : 86} r="3.5" fill="#1e293b" />
               <circle cx={type === 'thinking' ? 118 : 120} cy={type === 'thinking' ? 85 : 86} r="3.5" fill="#1e293b" />
             </g>

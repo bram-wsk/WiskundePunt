@@ -1096,6 +1096,23 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       }
   };
 
+  const toggleTTS = async (studentId: string, currentStatus?: boolean) => {
+      const newStatus = !currentStatus;
+      
+      // Optimistic update
+      onUpdateStudents(students.map(s => s.id === studentId ? { ...s, ttsEnabled: newStatus } : s));
+
+      try {
+          const { error } = await supabase.from('students').update({ tts_enabled: newStatus }).eq('id', studentId);
+          if (error) throw error;
+      } catch (error) {
+          console.error("Failed to toggle TTS:", error);
+          // Revert on failure
+          onUpdateStudents(students.map(s => s.id === studentId ? { ...s, ttsEnabled: currentStatus } : s));
+          handleSupabaseError(error, "updaten voorleesfunctie");
+      }
+  };
+
   const toggleClassForTeacher = async (teacherId: string, classId: string) => {
      const teacher = teachers.find(t => t.id === teacherId);
      if(!teacher) return;

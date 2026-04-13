@@ -13,6 +13,7 @@ import { evaluateProgression } from './services/geminiService';
 import { supabase } from './services/supabaseClient';
 import { DEFAULT_AI_GUIDE_CONFIG } from './constants';
 import { Logo } from './components/Logo';
+import { useLowStimulus } from './hooks/useLowStimulus';
 
 const DEFAULT_SESSION_TARGET = 5;
 
@@ -154,6 +155,7 @@ const App: React.FC = () => {
   const [intervention, setIntervention] = useState<{ isActive: boolean, errorType: ErrorType | null, alertId?: string }>({ isActive: false, errorType: null });
 
   const [simulatedClassId, setSimulatedClassId] = useState<string | null>(null);
+  const { isLowStimulus, toggle: toggleLowStimulus, setLowStimulusValue } = useLowStimulus();
 
   const [stats, setStats] = useState<SessionStats>({
     completed: 0, totalErrors: 0,
@@ -297,7 +299,9 @@ const App: React.FC = () => {
             firstName: s.first_name,
             lastInitial: s.last_initial,
             password: s.password,
-            classId: String(s.class_id)
+            classId: String(s.class_id),
+            isLowStimulus: s.is_low_stimulus || false,
+            ttsEnabled: s.tts_enabled || false
           })));
         }
       } catch (err) {
@@ -361,6 +365,9 @@ const App: React.FC = () => {
   // Hydrate User Specific Data when UserInfo changes
   useEffect(() => {
     if (userInfo && userInfo.role === 'student' && !simulatedClassId) {
+      if (userInfo.isLowStimulus !== undefined) {
+        setLowStimulusValue(userInfo.isLowStimulus);
+      }
       const loadStudentData = async () => {
         // Load Progress
         const { data: progressData } = await supabase
@@ -443,6 +450,20 @@ const App: React.FC = () => {
   }, [userInfo, simulatedClassId]);
 
 
+  const handleToggleLowStimulus = async () => {
+    const newValue = !isLowStimulus;
+    toggleLowStimulus();
+    
+    if (userInfo?.role === 'student' && userInfo.id && !simulatedClassId) {
+      try {
+        await supabase.from('students').update({ is_low_stimulus: newValue }).eq('id', userInfo.id);
+        setUserInfo(prev => prev ? { ...prev, isLowStimulus: newValue } : null);
+      } catch (err) {
+        console.error("Failed to save prikkelarm setting to database", err);
+      }
+    }
+  };
+
   const handleLogout = useCallback(() => {
     setUserInfo(null);
     setShowLogoutConfirm(false);
@@ -462,6 +483,7 @@ const App: React.FC = () => {
   }, []);
 
   const createConfetti = useCallback(() => {
+    if (isLowStimulus) return;
     for (let i = 0; i < 50; i++) {
       const confetti = document.createElement('div');
       confetti.className = 'confetti';
@@ -471,7 +493,7 @@ const App: React.FC = () => {
       document.body.appendChild(confetti);
       setTimeout(() => confetti.remove(), 4000);
     }
-  }, []);
+  }, [isLowStimulus]);
 
   const handleStepStatusUpdate = useCallback((status: StepSuccessStatus) => {
     if (!activeModule || userInfo?.role !== 'student' || simulatedClassId) return;
@@ -914,6 +936,14 @@ const App: React.FC = () => {
            </div>
            
            <div className="flex items-center gap-2 md:gap-3">
+             <button 
+               onClick={handleToggleLowStimulus} 
+               className={`border-2 px-4 md:px-5 py-2 md:py-3 rounded-xl md:rounded-2xl transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest cursor-pointer flex items-center gap-2 ${isLowStimulus ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-200 text-slate-500 hover:text-indigo-600'}`}
+               title="Prikkelarme modus (voor o.a. ASS)"
+             >
+               <i className={`fa-solid ${isLowStimulus ? 'fa-eye-slash' : 'fa-eye'} md:mr-1`}></i>
+               <span className="hidden md:inline">Prikkelarm</span>
+             </button>
              <button onClick={() => setShowLogoutConfirm(true)} className="bg-white border-2 border-slate-200 px-4 md:px-5 py-2 md:py-3 rounded-xl md:rounded-2xl text-slate-500 hover:text-rose-600 transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest cursor-pointer">
                <i className="fa-solid fa-power-off md:mr-2"></i>
                <span className="hidden md:inline">Afmelden</span>
