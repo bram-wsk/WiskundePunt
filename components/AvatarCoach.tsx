@@ -1,5 +1,6 @@
 
 import React, { memo, useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { ErrorType } from '../types';
 
 interface AvatarCoachProps {
@@ -62,7 +63,11 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
   const showHelpButton = onAskHelp && type !== 'success' && type !== 'thinking';
 
   return (
-    <div className="fixed bottom-4 right-4 z-[40] flex flex-col items-end pointer-events-none max-w-[260px] md:max-w-[340px]">
+    <motion.div 
+      drag 
+      dragMomentum={false}
+      className="fixed bottom-4 right-4 z-[40] flex flex-col items-end pointer-events-none max-w-[260px] md:max-w-[340px]"
+    >
       
       {message && (
         <div className={`
@@ -116,44 +121,111 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
         </div>
       )}
 
-      <div className="relative w-28 h-28 md:w-36 md:h-36 pointer-events-auto transition-transform hover:-translate-y-1 duration-300 -mr-2">
+      <div className="relative w-28 h-28 md:w-36 md:h-36 pointer-events-auto transition-transform hover:-translate-y-1 duration-300 -mr-2 cursor-grab active:cursor-grabbing">
         <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl overflow-visible">
           <defs>
-            <linearGradient id="piBodyGrad" x1="0" y1="0" x2="1" y2="1">
-               <stop offset="0%" stopColor="#4f46e5"/>
-               <stop offset="100%" stopColor="#3730a3"/>
-            </linearGradient>
+            <clipPath id="circleClip">
+              <circle cx="100" cy="100" r="95" />
+            </clipPath>
           </defs>
 
-          <circle cx="100" cy="110" r="70" 
+          {/* Minimal Background Aura */}
+          <circle cx="100" cy="100" r="95" 
             className={`transition-colors duration-500 ${
-              type === 'error' ? 'fill-rose-200/40' : 
-              type === 'success' ? 'fill-emerald-200/40' : 
-              type === 'thinking' ? 'fill-amber-200/40' : 'fill-blue-200/40'
+              type === 'error' ? 'fill-rose-50' : 
+              type === 'success' ? 'fill-emerald-50' : 
+              type === 'thinking' ? 'fill-amber-50' : 'fill-slate-50'
             }`} 
           />
 
-          <g className="animate-[breathe_4s_infinite_ease-in-out]">
-             <path 
-               d="M 65 75 Q 65 45 100 45 Q 135 45 135 75 L 135 150 Q 135 160 145 160 L 120 160 L 120 85 Q 120 80 115 80 L 85 80 Q 80 80 80 85 L 80 150 Q 80 160 65 160 L 65 150 L 65 75 Z"
-               fill="url(#piBodyGrad)"
-               stroke="#312e81" strokeWidth="2"
-             />
-             <path d="M 50 55 Q 100 45 150 55 L 150 70 Q 100 60 50 70 Z" fill="url(#piBodyGrad)" stroke="#312e81" strokeWidth="2" />
-             <g transform="translate(65, 150)"><path d="M -8 0 L 15 0 Q 18 0 18 8 L -8 8 Z" fill="#f8fafc" stroke="#334155" strokeWidth="1.5"/><path d="M -8 8 L 18 8 L 18 11 L -8 11 Z" fill="#94a3b8" /></g>
-             <g transform="translate(120, 150)"><path d="M -3 0 L 20 0 Q 23 0 23 8 L -3 8 Z" fill="#f8fafc" stroke="#334155" strokeWidth="1.5"/><path d="M -3 8 L 23 8 L 23 11 L -3 11 Z" fill="#94a3b8" /></g>
-             <g transform="translate(100, 85)"><path d="M -12 -6 L -12 6 L 0 2 L 12 6 L 12 -6 L 0 -2 Z" fill="#f59e0b" stroke="#b45309" strokeWidth="1"/><rect x="-3" y="-3" width="6" height="6" rx="1" fill="#d97706" /></g>
-             <g transform="translate(100, 65)">
-                <g stroke="#f8fafc" strokeWidth="2.5" fill="rgba(255,255,255,0.2)"><circle cx="-16" cy="0" r="11" /><circle cx="16" cy="0" r="11" /><path d="M -5 0 L 5 0" strokeWidth="2" /></g>
-                <g className="animate-[blink_5s_infinite]"><circle cx="-16" cy="0" r="3" fill="white" /><circle cx="16" cy="0" r="3" fill="white" /></g>
-                <g stroke="#312e81" strokeWidth="2" strokeLinecap="round" fill="none">
-                   {type === 'error' ? (<><path d="M -24 -16 L -10 -13" /><path d="M 24 -16 L 10 -13" /></>) : type === 'thinking' ? (<><path d="M -24 -15 Q -18 -20 -12 -15" /><path d="M 12 -18 L 24 -18" /></>) : (<><path d="M -24 -15 Q -18 -19 -12 -15" /><path d="M 12 -15 Q 18 -19 24 -15" /></>)}
-                </g>
-                <g transform="translate(0, 20)">
-                   {type === 'success' ? (<path d="M -8 -4 Q 0 6 8 -4" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" />) : type === 'error' ? (<path d="M -6 2 Q 0 -3 6 2" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" />) : type === 'thinking' ? (<circle cx="0" cy="0" r="2.5" fill="white" />) : (<path d="M -6 -2 Q 0 3 6 -2" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" />)}
-                </g>
-             </g>
-             <g transform="translate(140, 55) rotate(-20)"><rect x="0" y="0" width="5" height="25" fill="#fcd34d" stroke="#d97706" strokeWidth="0.5" rx="1"/><rect x="0" y="20" width="5" height="4" fill="#fca5a5" /><path d="M 0 0 L 2.5 -6 L 5 0 Z" fill="#fcd34d" /><path d="M 1.5 -2.5 L 2.5 -6 L 3.5 -2.5 Z" fill="#1e293b" /></g>
+          <g className="animate-[breathe_4s_infinite_ease-in-out]" clipPath="url(#circleClip)">
+            {/* Shoulders / Sweater Base */}
+            <path d="M 25 200 C 25 135, 55 140, 100 140 C 145 140, 175 135, 175 200 Z" fill="#0f4c5c" />
+            
+            {/* Shirt Collar */}
+            <path d="M 80 140 L 100 165 L 120 140 Z" fill="#f8fafc" />
+            <path d="M 80 140 L 100 150 L 120 140 Z" fill="#e2e8f0" />
+
+            {/* Subtle Prime Number Pin (Silver '7') */}
+            <g transform="translate(125, 155)">
+              <path d="M 0 0 L 4 0 L 1.5 5" fill="none" stroke="#cbd5e1" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </g>
+
+            {/* Neck */}
+            <rect x="88" y="110" width="24" height="35" fill="#f5d0b5" />
+            {/* Neck shadow */}
+            <path d="M 88 110 Q 100 120 112 110 L 112 125 Q 100 135 88 125 Z" fill="#d4a383" opacity="0.4" />
+
+            {/* Head (Young adult, clean jawline) */}
+            <path d="M 65 65 C 65 25, 135 25, 135 65 C 135 105, 118 120, 100 120 C 82 120, 65 105, 65 65 Z" fill="#f5d0b5" />
+
+            {/* Ears */}
+            <path d="M 65 82 C 57 82, 57 70, 65 70 Z" fill="#f5d0b5" />
+            <path d="M 135 82 C 143 82, 143 70, 135 70 Z" fill="#f5d0b5" />
+
+            {/* Hair (Short, neat, modern, slight natural variation) */}
+            {/* Base hair */}
+            <path d="M 63 62 C 63 25, 137 25, 137 62 C 137 50, 115 42, 100 44 C 85 46, 70 55, 63 62 Z" fill="#3b2818" />
+            {/* Top texture/volume (neat but natural) */}
+            <path d="M 100 28 C 125 28, 137 42, 137 62 C 125 45, 110 42, 100 44 C 85 46, 75 52, 68 60 C 72 40, 85 28, 100 28 Z" fill="#4a3320" />
+            {/* Slight natural variation on top */}
+            <path d="M 85 29 Q 90 25 95 29 Q 92 32 85 29 Z" fill="#4a3320" />
+            <path d="M 110 30 Q 115 27 120 32 Q 115 34 110 30 Z" fill="#3b2818" />
+            {/* Sideburns */}
+            <path d="M 63 60 L 65 72 L 66.5 72 L 66.5 60 Z" fill="#3b2818" />
+            <path d="M 137 60 L 135 72 L 133.5 72 L 133.5 60 Z" fill="#3b2818" />
+
+            {/* Eyes (Calm, intelligent) */}
+            <g className="animate-[blink_5s_infinite]">
+              <circle cx={type === 'thinking' ? 78 : 80} cy={type === 'thinking' ? 85 : 86} r="3.5" fill="#1e293b" />
+              <circle cx={type === 'thinking' ? 118 : 120} cy={type === 'thinking' ? 85 : 86} r="3.5" fill="#1e293b" />
+            </g>
+
+            {/* Subtle Round Glasses */}
+            <circle cx="80" cy="86" r="12" fill="none" stroke="#475569" strokeWidth="1.5" />
+            <circle cx="120" cy="86" r="12" fill="none" stroke="#475569" strokeWidth="1.5" />
+            <path d="M 92 86 Q 100 84 108 86" fill="none" stroke="#475569" strokeWidth="1.5" />
+            <path d="M 68 86 L 63 84" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M 132 86 L 137 84" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" />
+
+            {/* Eyebrows (Neat, professional) */}
+            <g stroke="#3b2818" strokeWidth="2.5" strokeLinecap="round" fill="none">
+              {type === 'error' ? (
+                <>
+                  <path d="M 73 77 L 87 79" />
+                  <path d="M 127 77 L 113 79" />
+                </>
+              ) : type === 'thinking' ? (
+                <>
+                  <path d="M 73 77 L 87 75" />
+                  <path d="M 127 74 L 113 75" />
+                </>
+              ) : type === 'success' ? (
+                <>
+                  <path d="M 73 76 Q 80 74 87 76" />
+                  <path d="M 127 76 Q 120 74 113 76" />
+                </>
+              ) : (
+                <>
+                  <path d="M 73 76 Q 80 74 87 76" />
+                  <path d="M 127 76 Q 120 74 113 76" />
+                </>
+              )}
+            </g>
+
+            {/* Nose (Clean, minimal) */}
+            <path d="M 100 90 L 100 102 L 104 102" fill="none" stroke="#c89473" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+
+            {/* Mouth (Subtle, reliable smile) */}
+            {type === 'error' ? (
+              <path d="M 93 113 Q 100 111 107 113" fill="none" stroke="#1e293b" strokeWidth="1.5" strokeLinecap="round" />
+            ) : type === 'thinking' ? (
+              <line x1="94" y1="112" x2="106" y2="112" stroke="#1e293b" strokeWidth="1.5" strokeLinecap="round" />
+            ) : type === 'success' ? (
+              <path d="M 91 111 Q 100 116 109 111" fill="none" stroke="#1e293b" strokeWidth="1.5" strokeLinecap="round" />
+            ) : (
+              <path d="M 93 112 Q 100 115 107 112" fill="none" stroke="#1e293b" strokeWidth="1.5" strokeLinecap="round" />
+            )}
           </g>
         </svg>
       </div>
@@ -162,6 +234,6 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
         @keyframes breathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-2px) scale(1.02); } }
         @keyframes blink { 0%, 96%, 100% { transform: scaleY(1); } 98% { transform: scaleY(0.1); } }
       `}</style>
-    </div>
+    </motion.div>
   );
 });
