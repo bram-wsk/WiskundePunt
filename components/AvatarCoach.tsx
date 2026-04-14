@@ -10,10 +10,12 @@ interface AvatarCoachProps {
   title?: string;
   onAskHelp?: () => void;
   identifiedErrors?: ErrorType[]; // Nieuwe prop voor meervoudige fouten
+  ttsEnabled?: boolean;
 }
 
-export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = 'info', title, onAskHelp, identifiedErrors = [] }) => {
+export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = 'info', title, onAskHelp, identifiedErrors = [], ttsEnabled = false }) => {
   const [visibleMessage, setVisibleMessage] = useState('');
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const { isLowStimulus } = useLowStimulus();
   
   const cleanMessage = (msg: string) => {
@@ -70,6 +72,35 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
 
   const showHelpButton = onAskHelp && type !== 'success' && type !== 'thinking';
 
+  const handleSpeak = () => {
+    if (!ttsEnabled || !message) return;
+    
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const cleaned = cleanMessage(message);
+    const utterance = new SpeechSynthesisUtterance(cleaned);
+    utterance.lang = 'nl-NL';
+    
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Stop speaking when unmounted
+  useEffect(() => {
+    return () => {
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   return (
     <motion.div 
       drag 
@@ -91,9 +122,20 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
           )}
           
           <div className="space-y-3">
-            <p className="text-sm font-bold leading-relaxed font-sans pr-2">
-              {visibleMessage}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-bold leading-relaxed font-sans pr-2">
+                {visibleMessage}
+              </p>
+              {ttsEnabled && (
+                <button 
+                  onClick={handleSpeak}
+                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors border-none cursor-pointer ${isSpeaking ? 'bg-blue-500 text-white shadow-md' : 'bg-black/5 text-black/50 hover:bg-black/10'}`}
+                  title={isSpeaking ? "Stop voorlezen" : "Lees voor"}
+                >
+                  <i className={`fa-solid ${isSpeaking ? 'fa-stop' : 'fa-volume-high'} text-xs`}></i>
+                </button>
+              )}
+            </div>
 
             {/* MEERVOUDIGE FOUTEN DASHBOARD */}
             {type === 'error' && identifiedErrors.length > 0 && (

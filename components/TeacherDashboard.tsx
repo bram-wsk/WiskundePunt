@@ -2151,6 +2151,14 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                <div className="flex items-center gap-2">
                                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white px-1.5 py-0.5 rounded border border-slate-100">{classrooms.find(c => c.id === s.classId)?.name}</span>
                                   <span className="text-[11px] font-mono text-slate-600 font-bold bg-slate-200 px-2 py-0.5 rounded">pw: {s.password}</span>
+                                  <button 
+                                    onClick={() => toggleTTS(s.id, s.ttsEnabled)}
+                                    className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border transition-colors cursor-pointer ${s.ttsEnabled ? 'bg-indigo-100 text-indigo-600 border-indigo-200' : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
+                                    title="Voorleesfunctie (TTS)"
+                                  >
+                                    <i className={`fa-solid ${s.ttsEnabled ? 'fa-volume-high' : 'fa-volume-xmark'} mr-1`}></i>
+                                    TTS
+                                  </button>
                                </div>
                             </div>
                          </div>

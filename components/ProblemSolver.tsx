@@ -22,10 +22,11 @@ interface ProblemSolverProps {
   moduleId: ModuleId;
   aiGuideContext: string;
   studentName: string;
+  ttsEnabled?: boolean;
 }
 
 const ProblemSolverComponent: React.FC<ProblemSolverProps> = ({ 
-  problem, onComplete, onStepError, onStepSuccess, interventionType, onResetIntervention, historyContext, moduleId, aiGuideContext, studentName
+  problem, onComplete, onStepError, onStepSuccess, interventionType, onResetIntervention, historyContext, moduleId, aiGuideContext, studentName, ttsEnabled
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
@@ -255,6 +256,7 @@ const ProblemSolverComponent: React.FC<ProblemSolverProps> = ({
         message={isAnalyzing ? "Even denken..." : feedback?.feedback || (isExerciseComplete ? `Prima uitgevoerd, ${studentName}! Bekijk de totale oefening hiernaast nog even.` : (isEquationMode ? (hasExpectedOp ? "Eerst de bewerking aan de boogjes, dan de nieuwe balans!" : "Tijd voor een tussenstap. Werk de balans verder uit!") : "Wat is de volgende stap?"))} 
         type={isAnalyzing ? 'thinking' : feedback?.isCorrect === false ? 'error' : feedback ? 'success' : 'info'} 
         identifiedErrors={feedback?.errorTypes} // Doorgeven van gedetecteerde fouten
+        ttsEnabled={ttsEnabled}
       />
 
       <div className="fixed top-24 right-6 flex flex-col gap-4 z-[30]">

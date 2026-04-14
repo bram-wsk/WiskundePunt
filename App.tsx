@@ -981,6 +981,7 @@ const App: React.FC = () => {
                 moduleId={activeModule} 
                 aiGuideContext={aiGuideContext}
                 studentName={userInfo.firstName}
+                ttsEnabled={userInfo.ttsEnabled}
               />
             ) : (
               <div className="bg-white p-20 rounded-[4rem] text-center space-y-6">
