@@ -737,11 +737,6 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const activeInputRef = useRef<MathInputRef | null>(null);
   const isEquationMode = useMemo(() => selectedModule.startsWith('vergelijkingen'), [selectedModule]);
 
-  useEffect(() => {
-    setSteps([{ id: 'init', value: '', leftValue: '', rightValue: '', operation: '', hasOperation: isEquationMode }]);
-    setExpression(''); setLeftExpr(''); setRightExpr('');
-  }, [isEquationMode]);
-
   const handleAddStep = () => setSteps(prev => [...prev, { id: Date.now().toString(), value: '', leftValue: '', rightValue: '', operation: '', hasOperation: isEquationMode }]);
   const handleRemoveStep = (id: string) => setSteps(prev => prev.filter(s => s.id !== id));
   const updateStep = (id: string, field: keyof StepItem, val: any) => {
@@ -2265,7 +2260,15 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Kies Module</label>
                         <select 
                           value={selectedModule} 
-                          onChange={(e) => setSelectedModule(e.target.value as ModuleId)} 
+                          onChange={(e) => {
+                            const newModule = e.target.value as ModuleId;
+                            const newIsEquationMode = newModule.startsWith('vergelijkingen');
+                            if (newIsEquationMode !== isEquationMode) {
+                              setSteps([{ id: 'init', value: '', leftValue: '', rightValue: '', operation: '', hasOperation: newIsEquationMode }]);
+                              setExpression(''); setLeftExpr(''); setRightExpr('');
+                            }
+                            setSelectedModule(newModule);
+                          }} 
                           className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-bold text-sm outline-none cursor-pointer"
                         >
                           {allLeafModules.map(m => <option key={m.id} value={m.id}>{m.fullTitle}</option>)}
