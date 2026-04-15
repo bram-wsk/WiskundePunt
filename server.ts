@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import inviteTeacherHandler from "./api/invite-teacher";
 import resetTeacherPasswordHandler from "./api/reset-teacher-password";
+import studentLoginHandler from "./api/student-login";
 
 // Load environment variables from .env file if present
 dotenv.config();
@@ -23,6 +24,11 @@ async function startServer() {
   // API Route: Reset Teacher Password
   app.post("/api/reset-teacher-password", (req, res) => {
       resetTeacherPasswordHandler(req, res);
+  });
+
+  // API Route: Student Login
+  app.post("/api/student-login", (req, res) => {
+      studentLoginHandler(req, res);
   });
 
   // Vite middleware for development

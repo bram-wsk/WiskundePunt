@@ -896,10 +896,16 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     setResetLink(null);
     setResetLinkTeacherName(null);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
       // Use our new local API route instead of Edge Function
       const response = await fetch('/api/invite-teacher', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           email: newTeacherEmail.trim(),
           name: newTeacherName.trim(),
@@ -966,9 +972,15 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     setServerError('');
     
     try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
         const response = await fetch('/api/reset-teacher-password', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({
                 authId: authId,
                 redirectTo: window.location.origin

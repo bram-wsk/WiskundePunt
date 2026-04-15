@@ -27,6 +27,17 @@ export default async function handler(req: Request, res: Response) {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+    // 1.5 Verify Authorization
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "Unauthorized: Missing token" });
+    const token = authHeader.replace('Bearer ', '');
+    
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) return res.status(401).json({ error: "Unauthorized: Invalid token" });
+
+    const { data: profile } = await supabaseAdmin.from('teachers').select('role').eq('auth_id', user.id).single();
+    if (profile?.role !== 'admin') return res.status(403).json({ error: "Forbidden: Admins only" });
+
     // 2. Fetch User by authId
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(authId);
     if (userError || !userData?.user) {

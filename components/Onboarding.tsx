@@ -55,26 +55,30 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, classrooms, 
     }
   }, []);
 
-  const handleStudentLogin = (e: React.FormEvent) => {
+  const handleStudentLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const normalizedUsername = username.trim().toLowerCase();
-    const foundStudent = students.find(s => 
-       (s.firstName.toLowerCase() + s.lastInitial.toLowerCase()) === normalizedUsername && 
-       s.password === password
-    );
+    setLoading(true);
+    setError('');
 
-    if (foundStudent) {
-        const studentClass = classrooms.find(c => c.id === foundStudent.classId);
-        onComplete({ 
-            id: foundStudent.id,
-            firstName: foundStudent.firstName, 
-            className: studentClass?.name || 'Onbekende Klas', 
-            role: 'student',
-            isLowStimulus: foundStudent.isLowStimulus,
-            ttsEnabled: foundStudent.ttsEnabled
+    try {
+        const response = await fetch('/api/student-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
         });
-    } else {
-        showError("Hmm, dat klopt niet helemaal. Probeer opnieuw.");
+
+        const data = await response.json();
+
+        if (response.ok && data.student) {
+            onComplete(data.student);
+        } else {
+            showError(data.error || "Hmm, dat klopt niet helemaal. Probeer opnieuw.");
+        }
+    } catch (err) {
+        console.error("Login error:", err);
+        showError("Er ging iets mis bij het inloggen. Probeer het later opnieuw.");
+    } finally {
+        setLoading(false);
     }
   };
 

@@ -292,21 +292,6 @@ const App: React.FC = () => {
             sections: configData.sections
           });
         }
-
-        // 4. Fetch Students (Publicly visible for student login selection - username check)
-        const { data: studentsData, error: studentsError } = await safeFetch(async () => await supabase.from('students').select('*'));
-        if (studentsError) throw studentsError;
-        if (studentsData) {
-          setStudents(studentsData.map(s => ({
-            id: String(s.id),
-            firstName: s.first_name,
-            lastInitial: s.last_initial,
-            password: s.password,
-            classId: String(s.class_id),
-            isLowStimulus: s.is_low_stimulus || false,
-            ttsEnabled: s.tts_enabled || false
-          })));
-        }
       } catch (err) {
         console.error("Error fetching initial data:", err);
       } finally {
@@ -320,6 +305,12 @@ const App: React.FC = () => {
   useEffect(() => {
     const fetchTeacherData = async () => {
       if (userInfo && (userInfo.role === 'teacher' || userInfo.role === 'admin')) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            console.warn("Unauthorized attempt to fetch teacher data");
+            return;
+        }
+
         setIsLoading(true);
         // Fetch Teachers (now allowed via RLS because we are authenticated)
         const { data: teachersData } = await supabase.from('teachers').select('*');
@@ -357,6 +348,20 @@ const App: React.FC = () => {
               };
             });
             setAllStudentResults(Object.values(resultsMap));
+        }
+
+        // Fetch students for teacher dashboard
+        const { data: studentsData } = await supabase.from('students').select('*');
+        if (studentsData) {
+          setStudents(studentsData.map(s => ({
+            id: String(s.id),
+            firstName: s.first_name,
+            lastInitial: s.last_initial,
+            password: s.password,
+            classId: String(s.class_id),
+            isLowStimulus: s.is_low_stimulus || false,
+            ttsEnabled: s.tts_enabled || false
+          })));
         }
         
         setIsLoading(false);
