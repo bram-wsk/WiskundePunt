@@ -38,6 +38,7 @@ export interface Classroom {
 
 export interface Teacher {
   id: string;
+  authId?: string;
   name: string;
   pin: string;
   classIds: string[];

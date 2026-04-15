@@ -378,6 +378,9 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [isAddingTeacher, setIsAddingTeacher] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
+  const [resetLink, setResetLink] = useState<string | null>(null);
+  const [resetLinkTeacherName, setResetLinkTeacherName] = useState<string | null>(null);
+  const [isResettingPassword, setIsResettingPassword] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string>('');
   const [manualAuthId, setManualAuthId] = useState('');
 
@@ -890,6 +893,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     if (!newTeacherName.trim() || !newTeacherEmail.trim()) return;
     
     setIsAddingTeacher(true);
+    setResetLink(null);
+    setResetLinkTeacherName(null);
     try {
       // Use our new local API route instead of Edge Function
       const response = await fetch('/api/invite-teacher', {
@@ -946,6 +951,42 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       onUpdateTeachers(teachers.filter(t => t.id !== id));
     } else {
       handleSupabaseError(error, "verwijderen leerkracht");
+    }
+  };
+
+  const handleResetPassword = async (teacherId: string, teacherName: string, authId?: string) => {
+    if (!authId) {
+        alert("Kan wachtwoord niet herstellen: deze leerkracht heeft geen gekoppeld account (authId ontbreekt).");
+        return;
+    }
+    
+    setIsResettingPassword(teacherId);
+    setResetLink(null);
+    setResetLinkTeacherName(null);
+    setServerError('');
+    
+    try {
+        const response = await fetch('/api/reset-teacher-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                authId: authId,
+                redirectTo: window.location.origin
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.resetLink) {
+            setResetLink(data.resetLink);
+            setResetLinkTeacherName(teacherName);
+        } else {
+            setServerError(data.error || "Fout bij genereren herstellink.");
+        }
+    } catch (err: any) {
+        setServerError(err.message || "Netwerkfout.");
+    } finally {
+        setIsResettingPassword(null);
     }
   };
 
@@ -2548,8 +2589,48 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                      </p>
                                   </div>
                                </div>
-                               <button onClick={() => handleDeleteTeacher(t.id)} className="w-8 h-8 flex items-center justify-center text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border-none cursor-pointer"><i className="fa-solid fa-trash-can"></i></button>
+                               <div className="flex items-center gap-2">
+                                  {t.authId && (
+                                     <button 
+                                        onClick={() => handleResetPassword(t.id, t.name, t.authId)} 
+                                        disabled={isResettingPassword === t.id}
+                                        className="w-8 h-8 flex items-center justify-center text-amber-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors border-none cursor-pointer disabled:opacity-50"
+                                        title="Wachtwoord herstellen"
+                                     >
+                                        {isResettingPassword === t.id ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-key"></i>}
+                                     </button>
+                                  )}
+                                  <button onClick={() => handleDeleteTeacher(t.id)} className="w-8 h-8 flex items-center justify-center text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border-none cursor-pointer"><i className="fa-solid fa-trash-can"></i></button>
+                               </div>
                             </div>
+                            {resetLink && resetLinkTeacherName === t.name && (
+                               <div className="mb-3 p-3 bg-amber-50 border-2 border-amber-100 rounded-xl animate-in slide-in-from-top-2 duration-300">
+                                  <div className="flex items-center gap-2 mb-2 text-amber-800">
+                                     <i className="fa-solid fa-key"></i>
+                                     <span className="text-xs font-black uppercase tracking-widest">
+                                        Herstellink Gegenereerd
+                                     </span>
+                                  </div>
+                                  <p className="text-[10px] text-amber-700 font-medium mb-2">
+                                     Geef deze link aan {t.name} om een nieuw wachtwoord in te stellen:
+                                  </p>
+                                  <div className="flex gap-2">
+                                     <div className="flex-1 bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-[10px] font-mono text-amber-800 truncate select-all">
+                                        {resetLink}
+                                     </div>
+                                     <button 
+                                        onClick={() => {
+                                           navigator.clipboard.writeText(resetLink);
+                                           alert("Link gekopieerd!");
+                                        }}
+                                        className="bg-amber-500 text-white w-8 h-8 rounded-lg flex items-center justify-center shadow-sm hover:bg-amber-600 transition-colors border-none cursor-pointer"
+                                        title="Kopieer link"
+                                     >
+                                        <i className="fa-solid fa-copy"></i>
+                                     </button>
+                                  </div>
+                               </div>
+                            )}
                             <div className="flex flex-wrap gap-1">
                                {myClassrooms.map(c => {
                                   const hasAccess = t.classIds.includes(c.id);

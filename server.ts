@@ -2,6 +2,7 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import inviteTeacherHandler from "./api/invite-teacher";
+import resetTeacherPasswordHandler from "./api/reset-teacher-password";
 
 // Load environment variables from .env file if present
 dotenv.config();
@@ -17,6 +18,11 @@ async function startServer() {
   app.post("/api/invite-teacher", (req, res) => {
       // Express req/res are compatible with Vercel handler signature
       inviteTeacherHandler(req, res);
+  });
+
+  // API Route: Reset Teacher Password
+  app.post("/api/reset-teacher-password", (req, res) => {
+      resetTeacherPasswordHandler(req, res);
   });
 
   // Vite middleware for development

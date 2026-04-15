@@ -145,7 +145,7 @@ const App: React.FC = () => {
   const [showPasswordSetup, setShowPasswordSetup] = useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
-    return searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true';
+    return searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true' || hashParams.get('type') === 'recovery';
   });
 
   const [sessionErrorCounts, setSessionErrorCounts] = useState<Record<ErrorType, number>>({
@@ -178,7 +178,7 @@ const App: React.FC = () => {
         const searchParams = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
         
-        if (searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true') {
+        if (searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true' || hashParams.get('type') === 'recovery') {
             setShowPasswordSetup(true);
         }
 
@@ -221,7 +221,10 @@ const App: React.FC = () => {
     });
 
     // Listen for changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+            setShowPasswordSetup(true);
+        }
         if (session?.user) handleAuthUser(session.user);
     });
 
@@ -323,6 +326,7 @@ const App: React.FC = () => {
         if (teachersData) {
           setTeachers(teachersData.map(t => ({
             id: String(t.id),
+            authId: t.auth_id,
             name: t.name,
             pin: "PROTECTED",
             classIds: t.class_ids || [],
