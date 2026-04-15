@@ -1,6 +1,15 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+
+// Capture the hash before Supabase client initializes and clears it
+if (typeof window !== 'undefined') {
+  const hash = window.location.hash;
+  if (hash && (hash.includes('type=recovery') || hash.includes('type=invite') || hash.includes('type=magiclink') || hash.includes('setup_password=true'))) {
+    sessionStorage.setItem('auth_intent', hash);
+  }
+}
+
 import App from './App';
 import { registerSW } from 'virtual:pwa-register';
 

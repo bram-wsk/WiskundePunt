@@ -144,7 +144,8 @@ const App: React.FC = () => {
   const [showGrowthCelebration, setShowGrowthCelebration] = useState(false);
   const [showPasswordSetup, setShowPasswordSetup] = useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
+    const hashString = window.location.hash || sessionStorage.getItem('auth_intent') || '';
+    const hashParams = new URLSearchParams(hashString.includes('?') ? hashString.split('?')[1] : hashString.substring(1));
     
     const error = hashParams.get('error_description') || hashParams.get('error');
     if (error) {
@@ -180,10 +181,12 @@ const App: React.FC = () => {
   }, [aiGuideConfig]);
 
   useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
+    const hashString = window.location.hash || sessionStorage.getItem('auth_intent') || '';
+    const hashParams = new URLSearchParams(hashString.includes('?') ? hashString.split('?')[1] : hashString.substring(1));
     const error = hashParams.get('error_description') || hashParams.get('error');
     if (error) {
         alert("Fout met de link: " + decodeURIComponent(error).replace(/\+/g, ' '));
+        sessionStorage.removeItem('auth_intent');
     }
   }, []);
 
@@ -192,7 +195,8 @@ const App: React.FC = () => {
     const handleAuthUser = async (user: any) => {
         // Check for password setup param in both search and hash
         const searchParams = new URLSearchParams(window.location.search);
-        const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
+        const hashString = window.location.hash || sessionStorage.getItem('auth_intent') || '';
+        const hashParams = new URLSearchParams(hashString.includes('?') ? hashString.split('?')[1] : hashString.substring(1));
         const type = hashParams.get('type');
         
         if (searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true' || type === 'recovery' || type === 'invite' || type === 'magiclink') {
@@ -872,6 +876,7 @@ const App: React.FC = () => {
       <SetPasswordModal 
         onComplete={() => {
           setShowPasswordSetup(false);
+          sessionStorage.removeItem('auth_intent');
           const newUrl = window.location.pathname;
           window.history.replaceState({}, document.title, newUrl);
           // Refresh or redirect to ensure dashboard loads correctly
