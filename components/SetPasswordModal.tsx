@@ -13,8 +13,8 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ onComplete }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      setError('Wachtwoord moet minstens 6 tekens zijn.');
+    if (password.length < 8) {
+      setError('Wachtwoord moet minstens 8 tekens zijn.');
       return;
     }
     if (password !== confirmPassword) {
@@ -65,7 +65,7 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ onComplete }
               type="password" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
-              placeholder="Min. 6 tekens" 
+              placeholder="Min. 8 tekens" 
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-sm outline-none focus:border-emerald-500 transition-colors"
               required
             />
