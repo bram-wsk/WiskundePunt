@@ -201,6 +201,8 @@ const App: React.FC = () => {
         
         if (searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true' || type === 'recovery' || type === 'invite' || type === 'magiclink') {
             setShowPasswordSetup(true);
+            setIsLoading(false);
+            return; // HALT EXECUTION: Do not fetch any user data until password is set
         }
 
         setIsLoading(true);
