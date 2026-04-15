@@ -6,6 +6,7 @@ interface SetPasswordModalProps {
 }
 
 export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ onComplete }) => {
+  const [emailInput, setEmailInput] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -13,6 +14,10 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ onComplete }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!emailInput.trim()) {
+      setError('Vul ter controle je e-mailadres in.');
+      return;
+    }
     if (password.length < 8) {
       setError('Wachtwoord moet minstens 8 tekens zijn.');
       return;
@@ -26,6 +31,17 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ onComplete }
     setError('');
 
     try {
+      // Verify email matches the logged-in user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+         throw new Error("Sessie is verlopen of ongeldig. Vraag een nieuwe link aan.");
+      }
+
+      if (user.email?.toLowerCase() !== emailInput.trim().toLowerCase()) {
+         throw new Error("Het ingevoerde e-mailadres komt niet overeen met het account voor deze link.");
+      }
+
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       
@@ -48,7 +64,7 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ onComplete }
         
         <h2 className="text-2xl font-black text-slate-900">Stel je wachtwoord in</h2>
         <p className="text-slate-500 font-medium text-sm">
-          Welkom! Om je account te beveiligen, vragen we je een nieuw wachtwoord te kiezen.
+          Welkom! Om je account te beveiligen, vragen we je ter controle je e-mailadres in te vullen en een nieuw wachtwoord te kiezen.
         </p>
 
         {error && (
@@ -59,6 +75,17 @@ export const SetPasswordModal: React.FC<SetPasswordModalProps> = ({ onComplete }
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 text-left">
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Jouw E-mailadres (Ter controle)</label>
+            <input 
+              type="email" 
+              value={emailInput} 
+              onChange={(e) => setEmailInput(e.target.value)} 
+              placeholder="naam@school.be" 
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-sm outline-none focus:border-emerald-500 transition-colors"
+              required
+            />
+          </div>
           <div>
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nieuw Wachtwoord</label>
             <input 
