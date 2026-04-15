@@ -145,7 +145,15 @@ const App: React.FC = () => {
   const [showPasswordSetup, setShowPasswordSetup] = useState(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
-    return searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true' || hashParams.get('type') === 'recovery';
+    
+    const error = hashParams.get('error_description') || hashParams.get('error');
+    if (error) {
+        console.error("Auth error from URL:", decodeURIComponent(error));
+        // We can't alert during render, so we'll do it in a useEffect
+    }
+
+    const type = hashParams.get('type');
+    return searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true' || type === 'recovery' || type === 'invite' || type === 'magiclink';
   });
 
   const [sessionErrorCounts, setSessionErrorCounts] = useState<Record<ErrorType, number>>({
@@ -171,14 +179,23 @@ const App: React.FC = () => {
     return Object.values(sections).join('\n\n');
   }, [aiGuideConfig]);
 
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
+    const error = hashParams.get('error_description') || hashParams.get('error');
+    if (error) {
+        alert("Fout met de link: " + decodeURIComponent(error).replace(/\+/g, ' '));
+    }
+  }, []);
+
   // AUTH LISTENER FOR INVITES & PASSWORD SETUP
   useEffect(() => {
     const handleAuthUser = async (user: any) => {
         // Check for password setup param in both search and hash
         const searchParams = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams(window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.hash.substring(1));
+        const type = hashParams.get('type');
         
-        if (searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true' || hashParams.get('type') === 'recovery') {
+        if (searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true' || type === 'recovery' || type === 'invite' || type === 'magiclink') {
             setShowPasswordSetup(true);
         }
 
