@@ -1,5 +1,5 @@
 
-import React, { memo, useState, useEffect } from 'react';
+import React, { memo, useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { ErrorType } from '../types';
 import { useLowStimulus } from '../hooks/useLowStimulus';
@@ -18,6 +18,30 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
   const [isSpeaking, setIsSpeaking] = useState(false);
   const { isLowStimulus } = useLowStimulus();
   
+  const avatarRef = useRef<HTMLDivElement>(null);
+  const [bubblePosition, setBubblePosition] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('top-left');
+
+  const updateBubblePosition = () => {
+    if (!avatarRef.current) return;
+    const rect = avatarRef.current.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    
+    const isLeft = x < window.innerWidth / 2;
+    const isTop = y < window.innerHeight / 2;
+
+    if (isTop && isLeft) setBubblePosition('bottom-right');
+    else if (isTop && !isLeft) setBubblePosition('bottom-left');
+    else if (!isTop && isLeft) setBubblePosition('top-right');
+    else setBubblePosition('top-left');
+  };
+
+  useEffect(() => {
+    updateBubblePosition();
+    window.addEventListener('resize', updateBubblePosition);
+    return () => window.removeEventListener('resize', updateBubblePosition);
+  }, []);
+
   const cleanMessage = (msg: string) => {
     if (!msg) return "";
     return msg
@@ -103,16 +127,27 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
 
   return (
     <motion.div 
+      ref={avatarRef}
       drag 
       dragMomentum={false}
-      className="fixed bottom-4 right-4 z-[40] flex flex-col items-end pointer-events-none max-w-[260px] md:max-w-[340px]"
+      onDrag={updateBubblePosition}
+      onDragEnd={updateBubblePosition}
+      className="fixed z-[40] pointer-events-none"
+      style={{
+        bottom: '20px',
+        right: 'max(20px, calc(50vw - 512px - 80px))', 
+      }}
     >
       
       {message && (
         <div className={`
-            mb-2 mr-4 p-5 rounded-2xl border backdrop-blur-md pointer-events-auto 
-            ${isLowStimulus ? '' : 'animate-in slide-in-from-bottom-4 fade-in duration-300'} relative
+            absolute p-5 rounded-2xl border backdrop-blur-md pointer-events-auto w-[260px] md:w-[340px]
+            ${isLowStimulus ? '' : 'animate-in fade-in duration-300'}
             ${bubbleStyles[type]}
+            ${bubblePosition === 'top-left' ? 'bottom-[calc(100%+16px)] right-0' : ''}
+            ${bubblePosition === 'top-right' ? 'bottom-[calc(100%+16px)] left-0' : ''}
+            ${bubblePosition === 'bottom-left' ? 'top-[calc(100%+16px)] right-0' : ''}
+            ${bubblePosition === 'bottom-right' ? 'top-[calc(100%+16px)] left-0' : ''}
           `}>
           
           {title && (
@@ -163,7 +198,12 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
           )}
 
           <svg 
-            className="absolute -bottom-3 right-6 w-6 h-4 overflow-visible" 
+            className={`absolute w-6 h-4 overflow-visible transition-all duration-300 ${
+              bubblePosition === 'top-left' ? '-bottom-3 right-6' :
+              bubblePosition === 'top-right' ? '-bottom-3 left-6 -scale-x-100' :
+              bubblePosition === 'bottom-left' ? '-top-3 right-6 -scale-y-100' :
+              '-top-3 left-6 -scale-x-100 -scale-y-100'
+            }`} 
             viewBox="0 0 20 20"
           >
              <path d="M 0 0 L 20 0 L 20 20 Q 10 10 0 0 Z" className={tailFill[type]} />
