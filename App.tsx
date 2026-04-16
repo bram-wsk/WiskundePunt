@@ -496,7 +496,16 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
+    // If it's a teacher or admin, completely destroy the Supabase session
+    if (userInfo?.role === 'admin' || userInfo?.role === 'teacher') {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error("Error signing out of Supabase:", err);
+      }
+    }
+
     setUserInfo(null);
     setShowLogoutConfirm(false);
     setActiveModule(null);
@@ -512,7 +521,7 @@ const App: React.FC = () => {
       problemBreakdown: {},
       sessionStartTime: Date.now()
     });
-  }, []);
+  }, [userInfo]);
 
   const createConfetti = useCallback(() => {
     if (isLowStimulus) return;
