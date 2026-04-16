@@ -981,7 +981,7 @@ const App: React.FC = () => {
              <button 
                onClick={handleToggleLowStimulus} 
                className={`border-2 px-4 md:px-5 py-2 md:py-3 rounded-xl md:rounded-2xl transition-all font-black text-[9px] md:text-[10px] uppercase tracking-widest cursor-pointer flex items-center gap-2 ${isLowStimulus ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-slate-200 text-slate-500 hover:text-indigo-600'}`}
-               title="Prikkelarme modus (voor o.a. ASS)"
+               title="Activeren van een modus met minder prikkels."
              >
                <i className={`fa-solid ${isLowStimulus ? 'fa-eye-slash' : 'fa-eye'} md:mr-1`}></i>
                <span className="hidden md:inline">Prikkelarm</span>
