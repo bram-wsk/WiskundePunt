@@ -971,7 +971,7 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <div className={`w-full max-w-5xl ${isSimulating ? 'pt-8' : ''} pt-[env(safe-area-inset-top,0px)]`}>
+      <div className={`w-full max-w-5xl ${isSimulating ? 'pt-12' : 'pt-6 md:pt-10'} pt-[env(safe-area-inset-top,0px)]`}>
         <header className="flex items-center justify-between mb-8 md:mb-12 px-4 md:px-0">
            <div className="flex items-center gap-2 md:gap-4 cursor-pointer" onClick={handleReturnToHub}>
               <Logo size="lg" />
