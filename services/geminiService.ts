@@ -7,6 +7,9 @@ import { AIAnalysis, ErrorType, SessionStats, DifficultyLevel, AIProgression, Mo
 
 const getApiKey = () => {
   try {
+    if (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
+      return import.meta.env.VITE_GEMINI_API_KEY;
+    }
     return process.env.GEMINI_API_KEY || '';
   } catch (e) {
     return '';

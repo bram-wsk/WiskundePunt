@@ -62,6 +62,7 @@ export default defineConfig(({ mode }) => {
       ],
       define: {
         // Polyfill process.env for the browser if needed, but let Vite handle VITE_ variables
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || process.env.GEMINI_API_KEY || ''),
       },
       resolve: {
         alias: {
