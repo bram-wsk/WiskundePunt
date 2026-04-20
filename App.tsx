@@ -121,7 +121,19 @@ const createInitialProgress = (): Record<string, ModuleProgress> => {
 
 // Main Application Component - Triggering Redeploy for API Key fix
 const App: React.FC = () => {
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(() => {
+    const saved = sessionStorage.getItem('userInfo');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    if (userInfo) {
+       sessionStorage.setItem('userInfo', JSON.stringify(userInfo));
+    } else {
+       sessionStorage.removeItem('userInfo');
+    }
+  }, [userInfo]);
+
   const [isLoading, setIsLoading] = useState(true);
 
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -133,11 +145,38 @@ const App: React.FC = () => {
   const [diary, setDiary] = useState<LearningDiary>({ entries: [], totalSessions: 0, moduleProgress: createInitialProgress() });
   const [aiGuideConfig, setAIGuideConfig] = useState<AIGuideConfig>(DEFAULT_AI_GUIDE_CONFIG);
 
-  const [activeModule, setActiveModule] = useState<ModuleId | null>(null);
-  const [currentProblem, setCurrentProblem] = useState<Problem | null>(null);
+  const [activeModule, setActiveModule] = useState<ModuleId | null>(() => {
+    return (sessionStorage.getItem('studentActiveModule') as ModuleId) || null;
+  });
+  
+  // Save active module to session storage when it changes
+  useEffect(() => {
+    if (activeModule) {
+      sessionStorage.setItem('studentActiveModule', activeModule);
+    } else {
+      sessionStorage.removeItem('studentActiveModule');
+    }
+  }, [activeModule]);
 
-  const [solvedCount, setSolvedCount] = useState(0);
-  const [isFinished, setIsFinished] = useState(false);
+  const [currentProblem, setCurrentProblem] = useState<Problem | null>(() => {
+    const savedId = sessionStorage.getItem('studentCurrentProblemId');
+    if (savedId) {
+       // Allow problems to initialize after load, handled in a useEffect below
+    }
+    return null;
+  });
+
+  const [solvedCount, setSolvedCount] = useState(() => parseInt(sessionStorage.getItem('solvedCount') || '0', 10));
+  const [isFinished, setIsFinished] = useState(() => sessionStorage.getItem('isFinished') === 'true');
+  
+  useEffect(() => {
+    sessionStorage.setItem('solvedCount', solvedCount.toString());
+  }, [solvedCount]);
+
+  useEffect(() => {
+    sessionStorage.setItem('isFinished', isFinished.toString());
+  }, [isFinished]);
+
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [progressionInfo, setProgressionInfo] = useState<AIProgression | null>(null);
   const [isEvaluatingGrowth, setIsEvaluatingGrowth] = useState(false);
@@ -157,21 +196,46 @@ const App: React.FC = () => {
     return searchParams.get('setup_password') === 'true' || hashParams.get('setup_password') === 'true' || type === 'recovery' || type === 'invite' || type === 'magiclink';
   });
 
-  const [sessionErrorCounts, setSessionErrorCounts] = useState<Record<ErrorType, number>>({
-    [ErrorType.ORDER]: 0, [ErrorType.CALCULATION]: 0, [ErrorType.SIGN]: 0, 
-    [ErrorType.CONCEPT]: 0, [ErrorType.COPY]: 0, [ErrorType.UNKNOWN]: 0 
+  const [sessionErrorCounts, setSessionErrorCounts] = useState<Record<ErrorType, number>>(() => {
+    const saved = sessionStorage.getItem('sessionErrorCounts');
+    return saved ? JSON.parse(saved) : {
+      [ErrorType.ORDER]: 0, [ErrorType.CALCULATION]: 0, [ErrorType.SIGN]: 0, 
+      [ErrorType.CONCEPT]: 0, [ErrorType.COPY]: 0, [ErrorType.UNKNOWN]: 0 
+    };
   });
+  
+  useEffect(() => {
+    sessionStorage.setItem('sessionErrorCounts', JSON.stringify(sessionErrorCounts));
+  }, [sessionErrorCounts]);
+
   const [intervention, setIntervention] = useState<{ isActive: boolean, errorType: ErrorType | null, alertId?: string }>({ isActive: false, errorType: null });
 
-  const [simulatedClassId, setSimulatedClassId] = useState<string | null>(null);
+  const [simulatedClassId, setSimulatedClassId] = useState<string | null>(() => {
+    return sessionStorage.getItem('simulatedClassId') || null;
+  });
+
+  useEffect(() => {
+    if (simulatedClassId) {
+      sessionStorage.setItem('simulatedClassId', simulatedClassId);
+    } else {
+      sessionStorage.removeItem('simulatedClassId');
+    }
+  }, [simulatedClassId]);
   const { isLowStimulus, toggle: toggleLowStimulus, setLowStimulusValue } = useLowStimulus();
 
-  const [stats, setStats] = useState<SessionStats>({
-    completed: 0, totalErrors: 0,
-    errorDistribution: { [ErrorType.ORDER]: 0, [ErrorType.CALCULATION]: 0, [ErrorType.SIGN]: 0, [ErrorType.CONCEPT]: 0, [ErrorType.COPY]: 0, [ErrorType.UNKNOWN]: 0 },
-    problemBreakdown: {},
-    sessionStartTime: Date.now()
+  const [stats, setStats] = useState<SessionStats>(() => {
+    const saved = sessionStorage.getItem('sessionStats');
+    return saved ? JSON.parse(saved) : {
+      completed: 0, totalErrors: 0,
+      errorDistribution: { [ErrorType.ORDER]: 0, [ErrorType.CALCULATION]: 0, [ErrorType.SIGN]: 0, [ErrorType.CONCEPT]: 0, [ErrorType.COPY]: 0, [ErrorType.UNKNOWN]: 0 },
+      problemBreakdown: {},
+      sessionStartTime: Date.now()
+    };
   });
+
+  useEffect(() => {
+    sessionStorage.setItem('sessionStats', JSON.stringify(stats));
+  }, [stats]);
 
   // Construct the AI Guide context string
   const aiGuideContext = useMemo(() => {
@@ -513,6 +577,14 @@ const App: React.FC = () => {
     setIsFinished(false);
     setSolvedCount(0);
     setSimulatedClassId(null);
+    sessionStorage.removeItem('studentActiveModule');
+    sessionStorage.removeItem('studentCurrentProblemId');
+    sessionStorage.removeItem('simulatedClassId');
+    sessionStorage.removeItem('teacherDashboardActiveTab');
+    sessionStorage.removeItem('solvedCount');
+    sessionStorage.removeItem('isFinished');
+    sessionStorage.removeItem('sessionErrorCounts');
+    sessionStorage.removeItem('sessionStats');
     setIntervention({ isActive: false, errorType: null });
     setSessionErrorCounts({ [ErrorType.ORDER]: 0, [ErrorType.CALCULATION]: 0, [ErrorType.SIGN]: 0, [ErrorType.CONCEPT]: 0, [ErrorType.COPY]: 0, [ErrorType.UNKNOWN]: 0 });
     setStats({
@@ -648,7 +720,21 @@ const App: React.FC = () => {
     
     const problem = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
     setCurrentProblem(problem);
+    if (problem) sessionStorage.setItem('studentCurrentProblemId', problem.id);
   }, [diary, problems]);
+
+  // Restore current problem once problems load
+  useEffect(() => {
+    const savedId = sessionStorage.getItem('studentCurrentProblemId');
+    if (activeModule && !currentProblem && !isFinished && problems.length > 0) {
+       const found = savedId ? problems.find(p => p.id === savedId) : null;
+       if (found) {
+           setCurrentProblem(found);
+       } else {
+           handleModuleSelect(activeModule);
+       }
+    }
+  }, [activeModule, currentProblem, isFinished, problems, handleModuleSelect]);
 
   // LIVE ALERTS (SUPABASE REALTIME OR POLLING)
   useEffect(() => {
@@ -789,6 +875,7 @@ const App: React.FC = () => {
     
     const nextProblem = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
     setCurrentProblem(nextProblem);
+    if (nextProblem) sessionStorage.setItem('studentCurrentProblemId', nextProblem.id);
 
   }, [activeModule, currentProblem, userInfo, simulatedClassId, diary, problems]);
 
@@ -845,6 +932,8 @@ const App: React.FC = () => {
     setActiveModule(null);
     setCurrentProblem(null);
     setIsFinished(false);
+    sessionStorage.removeItem('studentActiveModule');
+    sessionStorage.removeItem('studentCurrentProblemId');
     setSolvedCount(0);
     setProgressionInfo(null);
     setIntervention({ isActive: false, errorType: null });

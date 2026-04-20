@@ -366,7 +366,18 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   onAddProblem, onUpdateProblem, onDeleteProblem, onUpdateClassrooms, onUpdateTeachers, onUpdateStudents, onClose, onSetProblems, onEnterStudentView,
   aiGuideConfig, setAIGuideConfig
 }) => {
-  const [activeTab, setActiveTab] = useState<DashboardTab>('live');
+  const [activeTab, setActiveTab] = useState<DashboardTab>(() => {
+    const saved = sessionStorage.getItem('teacherDashboardActiveTab');
+    if (['live', 'results', 'database', 'create', 'students', 'users', 'access', 'settings', 'ai-guide'].includes(saved || '')) {
+      return saved as DashboardTab;
+    }
+    return 'live';
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('teacherDashboardActiveTab', activeTab);
+  }, [activeTab]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -391,6 +402,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [newStudentClassId, setNewStudentClassId] = useState<string>('');
   const [newStudentPassword, setNewStudentPassword] = useState('');
   const [selectedStudentClassFilter, setSelectedStudentClassFilter] = useState<string>('all');
+  const [copiedPasswordId, setCopiedPasswordId] = useState<string | null>(null);
   
   // Custom confirmation states
   const [deleteConfirmationId, setDeleteConfirmationId] = useState<string | null>(null);
@@ -2198,7 +2210,20 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                                <h4 className="font-bold text-slate-800">{s.firstName} {s.lastInitial}.</h4>
                                <div className="flex items-center gap-2">
                                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white px-1.5 py-0.5 rounded border border-slate-100">{classrooms.find(c => c.id === s.classId)?.name}</span>
-                                  <span className="text-[11px] font-mono text-slate-600 font-bold bg-slate-200 px-2 py-0.5 rounded">pw: {s.password}</span>
+                                  <div className="flex items-center bg-slate-200 rounded">
+                                     <span className="text-[11px] font-mono text-slate-600 font-bold px-2 py-0.5">pw: {s.password}</span>
+                                     <button
+                                        onClick={() => {
+                                           navigator.clipboard.writeText(s.password);
+                                           setCopiedPasswordId(s.id);
+                                           setTimeout(() => setCopiedPasswordId(null), 2000);
+                                        }}
+                                        className="px-2 py-0.5 border-l border-slate-300 text-slate-500 hover:text-blue-600 hover:bg-slate-300 transition-colors border-none cursor-pointer rounded-r"
+                                        title="Kopieer wachtwoord"
+                                     >
+                                        <i className={`fa-solid ${copiedPasswordId === s.id ? 'fa-check text-emerald-500' : 'fa-copy'} text-[10px]`}></i>
+                                     </button>
+                                  </div>
                                   <button 
                                     onClick={() => toggleTTS(s.id, s.ttsEnabled)}
                                     className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border transition-colors cursor-pointer ${s.ttsEnabled ? 'bg-indigo-100 text-indigo-600 border-indigo-200' : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200'}`}
