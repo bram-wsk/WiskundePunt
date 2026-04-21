@@ -38,7 +38,6 @@ const ProblemSolverComponent: React.FC<ProblemSolverProps> = ({
   const [attempts, setAttempts] = useState<StepAttempt[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [feedback, setFeedback] = useState<AIAnalysis | null>(null);
-  const [showErrorShake, setShowErrorShake] = useState(false);
   
   const [isExerciseComplete, setIsExerciseComplete] = useState(false);
   const [finalErrors, setFinalErrors] = useState<Record<ErrorType, number> | null>(null);
@@ -125,7 +124,6 @@ const ProblemSolverComponent: React.FC<ProblemSolverProps> = ({
 
     if (isPerfect) {
       setIsAnalyzing(false);
-      setShowErrorShake(false);
       const isLastStep = currentStepIndex === problem.solution.length - 1;
       const successMessage = isLastStep 
         ? `Prima uitgevoerd, ${studentName}! Bekijk de totale oefening hiernaast nog even.`
@@ -134,10 +132,6 @@ const ProblemSolverComponent: React.FC<ProblemSolverProps> = ({
       handleSuccess(finalInput, userOperation, failedAttemptsCount, successMessage);
       return;
     }
-
-    // Immediate visual feedback for error
-    setShowErrorShake(true);
-    setTimeout(() => setShowErrorShake(false), 500);
 
     try {
       const result = await analyzeMathStep(
@@ -275,7 +269,7 @@ const ProblemSolverComponent: React.FC<ProblemSolverProps> = ({
          </button>
       </div>
 
-      <div className={`bg-white/80 backdrop-blur-sm rounded-[2.5rem] border border-blue-100 card-shadow overflow-hidden transition-all ${interventionType ? 'opacity-10 grayscale blur-xl pointer-events-none' : ''} ${showErrorShake ? 'animate-shake border-rose-300 shadow-rose-100' : ''}`}>
+      <div className={`bg-white/80 backdrop-blur-sm rounded-[2.5rem] border border-blue-100 card-shadow overflow-hidden transition-all ${interventionType ? 'opacity-10 grayscale blur-xl pointer-events-none' : ''}`}>
         <div className="p-6 md:p-10 space-y-6">
           
           <div className="bg-[#1a4d2e] text-white p-6 rounded-[2rem] border-[12px] border-amber-900 relative shadow-2xl overflow-x-auto overflow-y-hidden scroll-smooth">

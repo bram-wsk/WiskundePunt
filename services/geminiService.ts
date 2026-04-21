@@ -56,20 +56,19 @@ export async function analyzeMathStep(
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         systemInstruction: `
-        ${aiGuideContext || "Je bent een didactische wiskunde coach."} 
-        
-        BELANGRIJK:
-        Volg de "DIDACTISCHE AANPAK" uit de bovenstaande gids strikt op basis van het pogingnummer:
-        - Poging 1: Pas "STAP 0" toe (subtiel, zelf laten controleren, geen tips).
-        - Poging 2 of meer: Pas "STAP 1" toe (Socratische methode, gerichte vragen).
-        
-        STEL GEEN VRAGEN OVER DE OPGAVE ALS HET GOED IS.
-        HOU DE FEEDBACK ZEER KORT: MAXIMAAL 20 WOORDEN.
-      `,
+          ${aiGuideContext || "Je bent een didactische wiskunde coach."} 
+          
+          BELANGRIJK:
+          Volg de "DIDACTISCHE AANPAK" uit de bovenstaande gids strikt op basis van het pogingnummer:
+          - Poging 1: Pas "STAP 0" toe (subtiel, zelf laten controleren, geen tips).
+          - Poging 2 of meer: Pas "STAP 1" toe (Socratische methode, gerichte vragen).
+          
+          HOU DE FEEDBACK ZEER KORT: MAXIMAAL 30 WOORDEN.
+        `,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -91,28 +90,11 @@ export async function analyzeMathStep(
       }
     });
 
-    let text = response.text;
+    const text = response.text;
     if (!text) throw new Error("Geen tekst ontvangen van AI.");
-    
-    // Clean markdown formatting if present
-    text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-    
-    return JSON.parse(text);
+    return JSON.parse(text.trim());
   } catch (error) {
     console.error("AI Analysis Error details:", error);
-    
-    if (error instanceof Error && error.message.includes("ontbreekt")) {
-      return { 
-        isCorrect: false, 
-        errorTypes: [ErrorType.UNKNOWN], 
-        feedUp: "Systeemfout", 
-        feedback: "De Gemini API sleutel is niet correct ingesteld in je Vercel omgeving (VITE_GEMINI_API_KEY).", 
-        feedForward: "Controleer de instellingen.", 
-        tip: "Vergeet de VITE_ prefix niet.", 
-        encouragement: "Daarna werkt het weer!" 
-      };
-    }
-
     return { 
       isCorrect: false, 
       errorTypes: [ErrorType.UNKNOWN], 
@@ -135,7 +117,7 @@ export async function evaluateProgression(stats: SessionStats, currentLevel: Dif
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3-flash-preview",
       contents: `Evalueer de sessie voor module ${moduleId}. Stats: ${JSON.stringify(stats)}. Huidig niveau: ${currentLevel}.`,
       config: { 
         systemInstruction: aiGuideContext,
@@ -157,10 +139,9 @@ export async function evaluateProgression(stats: SessionStats, currentLevel: Dif
         }
       }
     });
-    let text = response.text;
+    const text = response.text;
     if (!text) throw new Error("Geen tekst ontvangen.");
-    text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-    return JSON.parse(text);
+    return JSON.parse(text.trim());
   } catch (e) {
     console.error("Progression Evaluation Error:", e);
     return {
@@ -195,7 +176,7 @@ export async function analyzeClassPerformance(
     Formaat: JSON.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3-flash-preview",
       contents: contents,
       config: {
         systemInstruction: aiGuideContext,
@@ -235,10 +216,9 @@ export async function analyzeClassPerformance(
         }
       }
     });
-    let text = response.text;
+    const text = response.text;
     if (!text) throw new Error("Geen tekst ontvangen.");
-    text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-    return JSON.parse(text);
+    return JSON.parse(text.trim());
   } catch (error) {
     console.error("Class Analysis Error:", error);
     return {
@@ -287,7 +267,7 @@ export async function generateMathProblem(
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         systemInstruction: aiGuideContext,
@@ -313,13 +293,10 @@ export async function generateMathProblem(
       }
     });
 
-    let text = response.text;
+    const text = response.text;
     if (!text) throw new Error("Geen tekst ontvangen.");
     console.log("Gemini response text (generateMathProblem):", text);
-    
-    text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
-    
-    return JSON.parse(text);
+    return JSON.parse(text.trim());
   } catch (error) {
     console.error("AI Generation Error:", error);
     throw error;
