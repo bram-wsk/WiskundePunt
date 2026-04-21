@@ -91,11 +91,28 @@ export async function analyzeMathStep(
       }
     });
 
-    const text = response.text;
+    let text = response.text;
     if (!text) throw new Error("Geen tekst ontvangen van AI.");
-    return JSON.parse(text.trim());
+    
+    // Clean markdown formatting if present
+    text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+    
+    return JSON.parse(text);
   } catch (error) {
     console.error("AI Analysis Error details:", error);
+    
+    if (error instanceof Error && error.message.includes("ontbreekt")) {
+      return { 
+        isCorrect: false, 
+        errorTypes: [ErrorType.UNKNOWN], 
+        feedUp: "Systeemfout", 
+        feedback: "De Gemini API sleutel is niet correct ingesteld in je Vercel omgeving (VITE_GEMINI_API_KEY).", 
+        feedForward: "Controleer de instellingen.", 
+        tip: "Vergeet de VITE_ prefix niet.", 
+        encouragement: "Daarna werkt het weer!" 
+      };
+    }
+
     return { 
       isCorrect: false, 
       errorTypes: [ErrorType.UNKNOWN], 
@@ -140,9 +157,10 @@ export async function evaluateProgression(stats: SessionStats, currentLevel: Dif
         }
       }
     });
-    const text = response.text;
+    let text = response.text;
     if (!text) throw new Error("Geen tekst ontvangen.");
-    return JSON.parse(text.trim());
+    text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+    return JSON.parse(text);
   } catch (e) {
     console.error("Progression Evaluation Error:", e);
     return {
@@ -217,9 +235,10 @@ export async function analyzeClassPerformance(
         }
       }
     });
-    const text = response.text;
+    let text = response.text;
     if (!text) throw new Error("Geen tekst ontvangen.");
-    return JSON.parse(text.trim());
+    text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+    return JSON.parse(text);
   } catch (error) {
     console.error("Class Analysis Error:", error);
     return {
@@ -294,10 +313,13 @@ export async function generateMathProblem(
       }
     });
 
-    const text = response.text;
+    let text = response.text;
     if (!text) throw new Error("Geen tekst ontvangen.");
     console.log("Gemini response text (generateMathProblem):", text);
-    return JSON.parse(text.trim());
+    
+    text = text.replace(/^```json\s*/i, '').replace(/\s*```$/i, '').trim();
+    
+    return JSON.parse(text);
   } catch (error) {
     console.error("AI Generation Error:", error);
     throw error;
