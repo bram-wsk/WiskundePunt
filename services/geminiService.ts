@@ -55,9 +55,11 @@ export async function analyzeMathStep(
       - Bepaal ALLE types fouten uit de lijst: ${Object.values(ErrorType).join(', ')}.
     `;
 
-    const response = await ai.getGenerativeModel({
+    const response = await ai.models.generateContent({
       model: "gemini-1.5-flash",
-      systemInstruction: `
+      contents: prompt,
+      config: {
+        systemInstruction: `
         ${aiGuideContext || "Je bent een didactische wiskunde coach."} 
         
         BELANGRIJK:
@@ -68,9 +70,6 @@ export async function analyzeMathStep(
         STEL GEEN VRAGEN OVER DE OPGAVE ALS HET GOED IS.
         HOU DE FEEDBACK ZEER KORT: MAXIMAAL 20 WOORDEN.
       `,
-    }).generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -118,12 +117,11 @@ export async function evaluateProgression(stats: SessionStats, currentLevel: Dif
   const ai = new GoogleGenAI({ apiKey });
 
   try {
-    const response = await ai.getGenerativeModel({
+    const response = await ai.models.generateContent({
       model: "gemini-1.5-flash",
-      systemInstruction: aiGuideContext,
-    }).generateContent({
-      contents: [{ role: 'user', parts: [{ text: `Evalueer de sessie voor module ${moduleId}. Stats: ${JSON.stringify(stats)}. Huidig niveau: ${currentLevel}.` }] }],
-      generationConfig: { 
+      contents: `Evalueer de sessie voor module ${moduleId}. Stats: ${JSON.stringify(stats)}. Huidig niveau: ${currentLevel}.`,
+      config: { 
+        systemInstruction: aiGuideContext,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -178,12 +176,11 @@ export async function analyzeClassPerformance(
     
     Formaat: JSON.`;
 
-    const response = await ai.getGenerativeModel({
+    const response = await ai.models.generateContent({
       model: "gemini-1.5-flash",
-      systemInstruction: aiGuideContext,
-    }).generateContent({
-      contents: [{ role: 'user', parts: [{ text: contents }] }],
-      generationConfig: {
+      contents: contents,
+      config: {
+        systemInstruction: aiGuideContext,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -270,12 +267,11 @@ export async function generateMathProblem(
       }
     `;
 
-    const response = await ai.getGenerativeModel({
+    const response = await ai.models.generateContent({
       model: "gemini-1.5-flash",
-      systemInstruction: aiGuideContext,
-    }).generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
+      contents: prompt,
+      config: {
+        systemInstruction: aiGuideContext,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
