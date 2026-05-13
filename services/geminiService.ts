@@ -56,7 +56,7 @@ export async function analyzeMathStep(
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         systemInstruction: `
@@ -117,7 +117,7 @@ export async function evaluateProgression(stats: SessionStats, currentLevel: Dif
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: `Evalueer de sessie voor module ${moduleId}. Stats: ${JSON.stringify(stats)}. Huidig niveau: ${currentLevel}.`,
       config: { 
         systemInstruction: aiGuideContext,
@@ -176,7 +176,7 @@ export async function analyzeClassPerformance(
     Formaat: JSON.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: contents,
       config: {
         systemInstruction: aiGuideContext,
@@ -267,7 +267,7 @@ export async function generateMathProblem(
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         systemInstruction: aiGuideContext,
