@@ -8,6 +8,7 @@ import { MathToolbar } from './MathToolbar';
 import { AvatarCoach } from './AvatarCoach';
 import { Scratchpad } from './Scratchpad';
 import { normalizeMath } from '../constants';
+import { isAlgebraicallyEquivalent } from '../utils/mathChecker';
 import { VirtualKeyboard } from './VirtualKeyboard';
 
 interface ProblemSolverProps {
@@ -119,10 +120,23 @@ const ProblemSolverComponent: React.FC<ProblemSolverProps> = ({
     const isPerfect = normalizeMath(finalInput) === normalizeMath(expectedStep) && 
                       (!hasExpectedOp || normalizeMath(userOperation) === normalizeMath(expectedOpVal || ''));
 
+    let isMathEquivalent = false;
+    if (!isPerfect && (!hasExpectedOp || normalizeMath(userOperation) === normalizeMath(expectedOpVal || ''))) {
+      if (isEquationMode) {
+          const uL = splitEquation(finalInput)[0];
+          const uR = splitEquation(finalInput)[1];
+          const eL = splitEquation(expectedStep)[0];
+          const eR = splitEquation(expectedStep)[1];
+          isMathEquivalent = isAlgebraicallyEquivalent(uL, eL) && isAlgebraicallyEquivalent(uR, eR);
+      } else {
+          isMathEquivalent = isAlgebraicallyEquivalent(finalInput, expectedStep);
+      }
+    }
+
     // Count past failures for this step
     const failedAttemptsCount = attempts.filter(a => a.stepIndex === currentStepIndex && !a.isCorrect).length;
 
-    if (isPerfect) {
+    if (isPerfect || isMathEquivalent) {
       setIsAnalyzing(false);
       const isLastStep = currentStepIndex === problem.solution.length - 1;
       const successMessage = isLastStep 

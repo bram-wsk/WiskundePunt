@@ -73,9 +73,12 @@ export const AvatarCoach: React.FC<AvatarCoachProps> = memo(({ message, type = '
     let i = 0;
     const interval = setInterval(() => {
       setVisibleMessage(cleaned.slice(0, i));
-      i++;
-      if (i > cleaned.length) clearInterval(interval);
-    }, 12);
+      i += 3; // Typ sneller per 'frame' (3 letters tegelijk)
+      if (i > cleaned.length) {
+        setVisibleMessage(cleaned); // Zorg dat de zin exact klopt op het einde
+        clearInterval(interval);
+      }
+    }, 10); // 10ms voor 3 letters gaat veel vlotter zonder overdreven te verspringen
 
     return () => clearInterval(interval);
   }, [message, type]);
