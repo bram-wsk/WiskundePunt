@@ -5,6 +5,8 @@ import inviteTeacherHandler from "./api/invite-teacher";
 import resetTeacherPasswordHandler from "./api/reset-teacher-password";
 import studentLoginHandler from "./api/student-login";
 
+import geminiHandler from "./api/gemini";
+
 // Load environment variables from .env file if present
 dotenv.config();
 
@@ -29,6 +31,11 @@ async function startServer() {
   // API Route: Student Login
   app.post("/api/student-login", (req, res) => {
       studentLoginHandler(req, res);
+  });
+
+  // API Route: Gemini Proxy
+  app.post("/api/gemini", (req, res) => {
+      geminiHandler(req, res);
   });
 
   // Vite middleware for development

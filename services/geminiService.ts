@@ -1,20 +1,26 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
 import { AIAnalysis, ErrorType, SessionStats, DifficultyLevel, AIProgression, ModuleId, StudentResult, ClassAnalysis } from "../types";
 
 // GLOBAL_COACHING_GUIDELINE is now passed dynamically from the AI Guide config.
 // The content will be provided by the aiGuideContext parameter in each function.
 
-const getApiKey = () => {
-  try {
-    if (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) {
-      return import.meta.env.VITE_GEMINI_API_KEY;
-    }
-    return process.env.GEMINI_API_KEY || '';
-  } catch (e) {
-    return '';
+async function callGeminiProxy(contents: string, config: any, model = "gemini-3-flash-preview"): Promise<string> {
+  const response = await fetch('/api/gemini', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents, config, model })
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `API call failed with status: ${response.status}`);
   }
-};
+  
+  const data = await response.json();
+  if (!data.text) throw new Error("No text received from AI.");
+  return data.text;
+}
 
 export async function analyzeMathStep(
   expression: string,
@@ -27,14 +33,6 @@ export async function analyzeMathStep(
   aiGuideContext: string,
   attemptCount: number = 0
 ): Promise<AIAnalysis> {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    console.error("Gemini API Key is missing!");
-    throw new Error("Gemini API Key ontbreekt.");
-  }
-  
-  const ai = new GoogleGenAI({ apiKey });
-
   try {
     const prompt = `
       Analyseer deze wiskunde stap voor module: ${moduleId}.
@@ -55,10 +53,7 @@ export async function analyzeMathStep(
       - Bepaal ALLE types fouten uit de lijst: ${Object.values(ErrorType).join(', ')}.
     `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
+    const text = await callGeminiProxy(prompt, {
         systemInstruction: `
           ${aiGuideContext || "Je bent een didactische wiskunde coach."} 
           
@@ -87,14 +82,26 @@ export async function analyzeMathStep(
           },
           required: ["isCorrect", "errorTypes", "feedUp", "feedback", "feedForward", "tip", "encouragement"]
         }
-      }
     });
 
-    const text = response.text;
-    if (!text) throw new Error("Geen tekst ontvangen van AI.");
     return JSON.parse(text.trim());
-  } catch (error) {
+  } catch (error: any) {
     console.error("AI Analysis Error details:", error);
+    
+    // Check if the error is about a missing API key on Vercel
+    const errorMsg = error.message || "";
+    if (errorMsg.includes("GEMINI_API_KEY") || errorMsg.includes("Missing")) {
+        return {
+            isCorrect: false,
+            errorTypes: [ErrorType.UNKNOWN],
+            feedUp: "Configuratiefout!",
+            feedback: "De GEMINI_API_KEY ontbreekt in Vercel. Voeg deze toe in de Vercel Settings onder Environment Variables.",
+            feedForward: "Herstart de Vercel deployment daarna.",
+            tip: "Controleer Vercel instellingen.",
+            encouragement: ""
+        };
+    }
+
     return { 
       isCorrect: false, 
       errorTypes: [ErrorType.UNKNOWN], 
@@ -108,18 +115,10 @@ export async function analyzeMathStep(
 }
 
 export async function evaluateProgression(stats: SessionStats, currentLevel: DifficultyLevel, moduleId: string, aiGuideContext: string): Promise<AIProgression> {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    console.warn("Gemini API Key missing in evaluateProgression, skipping AI evaluation.");
-    return { shouldLevelUp: false, newLevel: currentLevel, reasoning: "API Key missing", growthMessage: "Oeps", feedUp: "", feedback: "", feedForward: "", tip: "", encouragement: "" };
-  }
-  const ai = new GoogleGenAI({ apiKey });
-
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Evalueer de sessie voor module ${moduleId}. Stats: ${JSON.stringify(stats)}. Huidig niveau: ${currentLevel}.`,
-      config: { 
+    const text = await callGeminiProxy(
+      `Evalueer de sessie voor module ${moduleId}. Stats: ${JSON.stringify(stats)}. Huidig niveau: ${currentLevel}.`,
+      { 
         systemInstruction: aiGuideContext,
         responseMimeType: "application/json",
         responseSchema: {
@@ -138,9 +137,7 @@ export async function evaluateProgression(stats: SessionStats, currentLevel: Dif
           required: ["shouldLevelUp", "newLevel", "reasoning", "growthMessage", "feedUp", "feedback", "feedForward", "tip", "encouragement"]
         }
       }
-    });
-    const text = response.text;
-    if (!text) throw new Error("Geen tekst ontvangen.");
+    );
     return JSON.parse(text.trim());
   } catch (e) {
     console.error("Progression Evaluation Error:", e);
@@ -163,22 +160,13 @@ export async function analyzeClassPerformance(
   results: StudentResult[],
   aiGuideContext: string
 ): Promise<ClassAnalysis> {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    throw new Error("Gemini API Key ontbreekt voor klassenanalyse.");
-  }
-  const ai = new GoogleGenAI({ apiKey });
-
   try {
     const contents = `ANALYSEER DEZE VOLLEDIGE KLASRESULTATEN VOOR ${className}:
     ${JSON.stringify(results, null, 2)}
     
     Formaat: JSON.`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: contents,
-      config: {
+    const text = await callGeminiProxy(contents, {
         systemInstruction: aiGuideContext,
         responseMimeType: "application/json",
         responseSchema: {
@@ -214,10 +202,8 @@ export async function analyzeClassPerformance(
           },
           required: ["summary", "crossModularTrends", "moduleAnalyses"]
         }
-      }
     });
-    const text = response.text;
-    if (!text) throw new Error("Geen tekst ontvangen.");
+    
     return JSON.parse(text.trim());
   } catch (error) {
     console.error("Class Analysis Error:", error);
@@ -234,13 +220,6 @@ export async function generateMathProblem(
   level: DifficultyLevel,
   aiGuideContext: string
 ): Promise<{ expression: string; steps: { content: string; operation?: string }[] }> {
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    console.error("Gemini API Key is missing in generateMathProblem!");
-    throw new Error("Gemini API Key ontbreekt.");
-  }
-  const ai = new GoogleGenAI({ apiKey });
-
   const isEquation = moduleId.startsWith('vergelijkingen');
 
   try {
@@ -266,10 +245,7 @@ export async function generateMathProblem(
       }
     `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
+    const text = await callGeminiProxy(prompt, {
         systemInstruction: aiGuideContext,
         responseMimeType: "application/json",
         responseSchema: {
@@ -290,11 +266,8 @@ export async function generateMathProblem(
           },
           required: ["expression", "steps"]
         }
-      }
     });
 
-    const text = response.text;
-    if (!text) throw new Error("Geen tekst ontvangen.");
     console.log("Gemini response text (generateMathProblem):", text);
     return JSON.parse(text.trim());
   } catch (error) {
