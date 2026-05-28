@@ -22,7 +22,7 @@ export default async function handler(req: Request, res: Response) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      return res.status(500).json({ error: "Server configuration error" });
+      return res.status(500).json({ error: `Server configuration error: Ontbrekende omgevingsvariabelen (URL: ${!!supabaseUrl}, KEY: ${!!supabaseServiceKey}). Voeg deze toe in de Vercel Settings.` });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);

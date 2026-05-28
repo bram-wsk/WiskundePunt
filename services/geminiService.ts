@@ -5,7 +5,7 @@ import { AIAnalysis, ErrorType, SessionStats, DifficultyLevel, AIProgression, Mo
 // GLOBAL_COACHING_GUIDELINE is now passed dynamically from the AI Guide config.
 // The content will be provided by the aiGuideContext parameter in each function.
 
-async function callGeminiProxy(contents: string, config: any, model = "gemini-3-flash-preview"): Promise<string> {
+async function callGeminiProxy(contents: string, config: any, model = "gemini-2.5-flash"): Promise<string> {
   const response = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -105,10 +105,10 @@ export async function analyzeMathStep(
     return { 
       isCorrect: false, 
       errorTypes: [ErrorType.UNKNOWN], 
-      feedUp: "Oeps!", 
-      feedback: "Meneer Priem kon je stap even niet goed lezen. Kijk je notatie na of probeer het opnieuw.", 
+      feedUp: "Systeemfout of timeout", 
+      feedback: `Meneer Priem kon je stap even niet goed lezen. (Foutmelding: ${errorMsg}). Kijk je notatie na of probeer het later opnieuw.`, 
       feedForward: "Probeer de stap nog eens in te vullen.", 
-      tip: "Gebruik de knoppen op het scherm.", 
+      tip: "Verwittig je leerkracht als dit blijft optreden.", 
       encouragement: "Zet door!" 
     };
   }
