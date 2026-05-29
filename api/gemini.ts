@@ -25,7 +25,7 @@ export default async function handler(req: Request, res: Response) {
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-      model: model === "gemini-3-flash-preview" || model === "gemini-2.5-flash" ? "gemini-2.0-flash" : (model || "gemini-2.0-flash"),
+      model: model === "gemini-3-flash-preview" || model === "gemini-2.5-flash" || model === "gemini-2.0-flash" ? "gemini-1.5-flash" : (model || "gemini-1.5-flash"),
       contents,
       config
     });
