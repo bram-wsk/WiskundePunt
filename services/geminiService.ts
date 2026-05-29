@@ -5,7 +5,7 @@ import { AIAnalysis, ErrorType, SessionStats, DifficultyLevel, AIProgression, Mo
 // GLOBAL_COACHING_GUIDELINE is now passed dynamically from the AI Guide config.
 // The content will be provided by the aiGuideContext parameter in each function.
 
-async function callGeminiProxy(contents: string, config: any, model = "gemini-2.5-flash"): Promise<string> {
+async function callGeminiProxy(contents: string, config: any, model = "gemini-2.0-flash"): Promise<string> {
   const response = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -789,6 +789,13 @@ const App: React.FC = () => {
     setIntervention({ isActive: false, errorType: null, alertId: undefined });
   };
 
+  const handleDismissInterventionUI = () => {
+    if (intervention.errorType) {
+       setSessionErrorCounts(prev => ({ ...prev, [intervention.errorType!]: 0 }));
+    }
+    setIntervention({ isActive: false, errorType: null, alertId: undefined });
+  };
+
   // Poll for unlock if intervention active
   useEffect(() => {
     let interval: any;
@@ -1035,6 +1042,7 @@ const App: React.FC = () => {
       {intervention.isActive && intervention.errorType && (
         <InterventionModal 
           errorType={intervention.errorType} 
+          onDismiss={handleDismissInterventionUI}
         />
       )}
 
