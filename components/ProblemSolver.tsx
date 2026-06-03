@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useCallback, memo, useEffect } from 'react';
-import { Problem, StepAttempt, ErrorType, AIAnalysis, ModuleId, StepSuccessStatus } from '../types';
+import { Problem, StepAttempt, ErrorType, AIAnalysis, ModuleId, StepSuccessStatus, getHighestPriorityError } from '../types';
 import { analyzeMathStep } from '../services/geminiService';
 import { MathDisplay } from './MathDisplay';
 import { MathInput, MathInputRef } from './MathInput';
@@ -206,9 +206,10 @@ const ProblemSolverComponent: React.FC<ProblemSolverProps> = ({
       
       updatedAttempts.forEach(attempt => {
         if (!attempt.isCorrect && attempt.errorCategories) {
-           attempt.errorCategories.forEach(errType => {
-              errorCounts[errType]++;
-           });
+           const highestPriority = getHighestPriorityError(attempt.errorCategories);
+           if (highestPriority) {
+              errorCounts[highestPriority]++;
+           }
         }
       });
       

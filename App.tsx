@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { ErrorType, SessionStats, DifficultyLevel, Problem, LearningDiary, UserInfo, AIProgression, ModuleId, ThemeConfig, DiaryEntry, Classroom, Teacher, StudentResult, InterventionAlert, SubModuleConfig, ModuleProgress, AIGuideConfig, Student, StepSuccessStatus } from './types';
+import { ErrorType, getHighestPriorityError, SessionStats, DifficultyLevel, Problem, LearningDiary, UserInfo, AIProgression, ModuleId, ThemeConfig, DiaryEntry, Classroom, Teacher, StudentResult, InterventionAlert, SubModuleConfig, ModuleProgress, AIGuideConfig, Student, StepSuccessStatus } from './types';
 import { ProgressBar } from './components/ProgressBar';
 import { ProblemSolver } from './components/ProblemSolver';
 import { SessionSummary } from './components/SessionSummary';
@@ -748,14 +748,16 @@ const App: React.FC = () => {
       const newCounts = { ...prev };
       let triggeringErrorType: ErrorType | null = null;
 
-      types.forEach(type => {
-         const newCount = (newCounts[type] || 0) + 1;
-         newCounts[type] = newCount;
+      const highestPriorityType = getHighestPriorityError(types);
+
+      if (highestPriorityType) {
+         const newCount = (newCounts[highestPriorityType] || 0) + 1;
+         newCounts[highestPriorityType] = newCount;
          // Trigger intervention if a specific error type occurs 3 or more times
          if (newCount >= 3) {
-            triggeringErrorType = type;
+            triggeringErrorType = highestPriorityType;
          }
-      });
+      }
 
       if (triggeringErrorType) {
         let newAlertId = undefined;

@@ -8,6 +8,16 @@ export enum ErrorType {
   UNKNOWN = 'onbekende fout'
 }
 
+export const getHighestPriorityError = (types: ErrorType[]): ErrorType | null => {
+  if (!types || types.length === 0) return null;
+  if (types.includes(ErrorType.ORDER)) return ErrorType.ORDER;
+  if (types.includes(ErrorType.SIGN)) return ErrorType.SIGN;
+  if (types.includes(ErrorType.CALCULATION)) return ErrorType.CALCULATION;
+  if (types.includes(ErrorType.CONCEPT)) return ErrorType.CONCEPT;
+  if (types.includes(ErrorType.COPY)) return ErrorType.COPY;
+  return types[0];
+};
+
 export type DifficultyLevel = 1 | 2 | 3;
 
 export type StepSuccessStatus = 'perfect' | 'self_corrected' | 'guided';
